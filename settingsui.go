@@ -5,7 +5,7 @@ import (
 	"image"
 	"strconv"
 
-	"mjl/duit"
+	"github.com/mjl-/duit"
 )
 
 type settingsUI struct {

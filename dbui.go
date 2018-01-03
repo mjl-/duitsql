@@ -3,7 +3,7 @@ package main
 import (
 	"database/sql"
 
-	"mjl/duit"
+	"github.com/mjl-/duit"
 )
 
 type dbUI struct {

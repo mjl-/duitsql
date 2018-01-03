@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"mjl/duit"
+	"github.com/mjl-/duit"
 )
 
 type tableUI struct {

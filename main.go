@@ -12,7 +12,7 @@ import (
 
 	"9fans.net/go/draw"
 	_ "github.com/lib/pq"
-	"mjl/duit"
+	"github.com/mjl-/duit"
 )
 
 type configConnection struct {

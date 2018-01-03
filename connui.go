@@ -5,7 +5,7 @@ import (
 	"image"
 	"log"
 
-	"mjl/duit"
+	"github.com/mjl-/duit"
 )
 
 type connUI struct {

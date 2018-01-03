@@ -18,8 +18,12 @@ MIT-license, see LICENSE.md
 - show structure of tables
 - fix todo's, like disconnecting properly
 - fetch rows from resultset on demand. requires updating duit.Gridlist
+- search for connections, databases, tables, at bottom of list
 
 - show []byte as hex?
 
+- new setting by duplicating existing one
+- connect via ssh?
 - understand postgis responses, and show geo data (if small enough)
 - support more databases
+- colors in UI to indicate which connection you have open
