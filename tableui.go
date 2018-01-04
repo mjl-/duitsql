@@ -44,7 +44,7 @@ func (ui *tableUI) load() {
 		}
 		dui.Call <- func() {
 			ui.Box.Kids = duit.NewKids(&duit.Label{Text: fmt.Sprintf("error: %s: %s", msg, err)})
-			dui.Redraw()
+			dui.Draw()
 		}
 		lerr = true
 		panic(lerr)

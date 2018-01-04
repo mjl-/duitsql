@@ -40,7 +40,7 @@ func newSettingsUI(cc configConnection, done func()) (ui *settingsUI) {
 	}
 	check := func(_ string, r *duit.Result) {
 		primary.Disabled = conn.name.Text == "" || conn.host.Text == "" || (conn.port.Text != "" && !validPort(conn.port.Text))
-		r.Redraw = true
+		r.Draw = true
 	}
 	conn.name.Changed = check
 	conn.host.Changed = check
