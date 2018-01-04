@@ -1,7 +1,7 @@
 build:
+	go build
 	go vet
 	golint
-	go build
 
 install:
 	go install
