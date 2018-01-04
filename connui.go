@@ -146,7 +146,7 @@ func newConnUI(cc configConnection) (ui *connUI) {
 		Kids: duit.NewKids(
 			&duit.Box{
 				Kids: duit.NewKids(
-					centerUI(&duit.Label{Text: "databases", Font: bold}),
+					duit.CenterUI(&duit.Label{Text: "databases", Font: bold}, duit.SpaceXY(4, 2)),
 					duit.NewScroll(databaseList),
 				),
 			},

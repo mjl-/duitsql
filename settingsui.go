@@ -142,7 +142,7 @@ func newSettingsUI(cc configConnection, done func()) (ui *settingsUI) {
 				&duit.Box{
 					MaxWidth: 350,
 					Kids: duit.NewKids(
-						centerUI(&duit.Label{Text: title, Font: bold}),
+						duit.CenterUI(&duit.Label{Text: title, Font: bold}, duit.SpaceXY(4, 2)),
 						&duit.Grid{
 							Columns: 2,
 							Padding: []duit.Space{

@@ -71,16 +71,6 @@ func saveConfigConnections(l []configConnection) {
 	}
 }
 
-func centerUI(ui duit.UI) *duit.Grid {
-	return &duit.Grid{
-		Columns: 1,
-		Padding: []duit.Space{duit.SpaceXY(4, 2)},
-		Halign:  []duit.Halign{duit.HalignMiddle},
-		Kids:    duit.NewKids(ui),
-		Width:   -1,
-	}
-}
-
 func main() {
 	log.SetFlags(0)
 	flag.Usage = func() {
@@ -194,7 +184,7 @@ func main() {
 				Kids: duit.NewKids(
 					&duit.Box{
 						Kids: duit.NewKids(
-							centerUI(&duit.Label{Text: "connections", Font: bold}),
+							duit.CenterUI(&duit.Label{Text: "connections", Font: bold}, duit.SpaceXY(4, 2)),
 							duit.NewScroll(connections),
 						),
 					},
