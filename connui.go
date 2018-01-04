@@ -42,7 +42,7 @@ func newConnUI(cc configConnection) (ui *connUI) {
 
 			go func() {
 				setStatus := func(err error) {
-					mainc <- func() {
+					dui.Call <- func() {
 						ui.databaseBox.Kids = duit.NewKids(&duit.Label{Text: "error: " + err.Error()})
 						dui.Render()
 					}
@@ -76,7 +76,7 @@ func newConnUI(cc configConnection) (ui *connUI) {
 					}
 				}
 
-				mainc <- func() {
+				dui.Call <- func() {
 					ui.db = db
 					disconnect.Disabled = false
 					databaseList.Values = dbValues

@@ -43,7 +43,6 @@ var (
 	connectionBox *duit.Box
 	disconnect    *duit.Button
 	hideLeftBars  bool // whether to show connections & databases bar. if not, we make them zero width
-	mainc         chan func()
 	bold          *draw.Font
 )
 
@@ -93,8 +92,6 @@ func main() {
 		bold, err = dui.Display.OpenFont(os.Getenv("boldfont"))
 		check(err, "open bold font")
 	}
-
-	mainc = make(chan func(), 0)
 
 	var configConnections []configConnection
 	f, err := os.Open(os.Getenv("HOME") + "/lib/duit/sql/connections.json")
@@ -199,9 +196,6 @@ func main() {
 		select {
 		case e := <-dui.Events:
 			dui.Event(e)
-
-		case fn := <-mainc:
-			fn()
 		}
 	}
 }

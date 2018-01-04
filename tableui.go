@@ -42,7 +42,7 @@ func (ui *tableUI) load() {
 		if err == nil {
 			return
 		}
-		mainc <- func() {
+		dui.Call <- func() {
 			ui.Box.Kids = duit.NewKids(&duit.Label{Text: fmt.Sprintf("error: %s: %s", msg, err)})
 			dui.Redraw()
 		}
@@ -92,7 +92,7 @@ func (ui *tableUI) load() {
 	err = rows.Err()
 	lcheck(err, "reading next row")
 
-	mainc <- func() {
+	dui.Call <- func() {
 		if len(gridRows) == 0 {
 			ui.Box.Kids = duit.NewKids(duit.NewMiddle(&duit.Label{Text: "empty resultset"}))
 			dui.Render()

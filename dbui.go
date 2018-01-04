@@ -32,7 +32,7 @@ func newDBUI(cUI *connUI, dbName string) (ui *dbUI) {
 
 func (ui *dbUI) init() {
 	setStatus := func(err error) {
-		mainc <- func() {
+		dui.Call <- func() {
 			ui.Box.Kids = duit.NewKids(&duit.Label{Text: "error: " + err.Error()})
 			dui.Render()
 		}
@@ -70,7 +70,7 @@ func (ui *dbUI) init() {
 		}
 	}
 
-	mainc <- func() {
+	dui.Call <- func() {
 		ui.db = db
 		ui.tableList = &duit.List{
 			Values: values,
