@@ -87,9 +87,9 @@ func main() {
 	dui, err = duit.NewDUI("sql", "1000x600")
 	check(err, "new dui")
 
-	bold = dui.Display.DefaultFont
+	bold = dui.Env.Display.DefaultFont
 	if os.Getenv("boldfont") != "" {
-		bold, err = dui.Display.OpenFont(os.Getenv("boldfont"))
+		bold, err = dui.Env.Display.OpenFont(os.Getenv("boldfont"))
 		check(err, "open bold font")
 	}
 
