@@ -53,8 +53,8 @@ func newSettingsUI(cc configConnection, done func()) (ui *settingsUI) {
 		action = "create"
 	}
 	primary = &duit.Button{
-		Text:    action,
-		Primary: true,
+		Text:     action,
+		Colorset: &dui.Primary,
 		Click: func(r *duit.Result) {
 			port := int64(5432)
 			if conn.port.Text != "" {
@@ -109,7 +109,8 @@ func newSettingsUI(cc configConnection, done func()) (ui *settingsUI) {
 			},
 		}
 		deleteButton := &duit.Button{
-			Text: "delete",
+			Text:     "delete",
+			Colorset: &dui.Danger,
 			Click: func(r *duit.Result) {
 				sel := connections.Selected()
 				connections.Values[sel[0]].Selected = false

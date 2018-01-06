@@ -34,8 +34,8 @@ func newConnUI(cc configConnection) (ui *connUI) {
 
 	ui = &connUI{cc: cc}
 	connect := &duit.Button{
-		Text:    "connect",
-		Primary: true,
+		Text:     "connect",
+		Colorset: &dui.Primary,
 		Click: func(result *duit.Result) {
 			result.Layout = true
 			ui.Box.Kids = duit.NewKids(connecting)
