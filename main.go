@@ -181,7 +181,7 @@ func main() {
 				Kids: duit.NewKids(
 					&duit.Box{
 						Kids: duit.NewKids(
-							duit.CenterUI(&duit.Label{Text: "connections", Font: bold}, duit.SpaceXY(4, 2)),
+							duit.CenterUI(duit.SpaceXY(4, 2), &duit.Label{Text: "connections", Font: bold}),
 							duit.NewScroll(connections),
 						),
 					},

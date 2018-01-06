@@ -105,7 +105,7 @@ func (ui *dbUI) init() {
 				Kids: duit.NewKids(
 					&duit.Box{
 						Kids: duit.NewKids(
-							duit.CenterUI(&duit.Label{Text: "tables", Font: bold}, duit.SpaceXY(4, 2)),
+							duit.CenterUI(duit.SpaceXY(4, 2), &duit.Label{Text: "tables", Font: bold}),
 							duit.NewScroll(ui.tableList),
 						),
 					},
