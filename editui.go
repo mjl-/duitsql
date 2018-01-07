@@ -36,7 +36,7 @@ func newEditUI(dbUI *dbUI) (ui *editUI) {
 		}
 		sqlF.Close()
 	}
-	edit.Keys = func(m draw.Mouse, k rune, r *duit.Result) {
+	edit.Keys = func(k rune, m draw.Mouse, r *duit.Result) {
 		switch k {
 		case draw.KeyCmd + 'g':
 			log.Printf("executing command\n")
