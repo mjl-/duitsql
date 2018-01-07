@@ -44,7 +44,7 @@ func newEditUI(dbUI *dbUI) (ui *editUI) {
 			if query == "" {
 				// read query under cursor. by moving backward and forward until we find eof or ;
 				c := ui.edit.Cursor()
-				skip := func(r duit.TextReader) {
+				skip := func(r duit.EditReader) {
 					for {
 						c, eof := r.Peek()
 						if eof || c == ';' {
@@ -53,8 +53,8 @@ func newEditUI(dbUI *dbUI) (ui *editUI) {
 						r.Get()
 					}
 				}
-				br := ui.edit.ReverseTextReader(c)
-				fr := ui.edit.TextReader(c)
+				br := ui.edit.ReverseEditReader(c)
+				fr := ui.edit.EditReader(c)
 				skip(br)
 				skip(fr)
 
