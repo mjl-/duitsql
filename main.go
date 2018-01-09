@@ -103,6 +103,12 @@ func main() {
 		check(err, "parsing connections.json config file")
 		check(f.Close(), "closing connections.json config file")
 	}
+
+	noConnectionUI := duit.NewMiddle(&duit.Label{Text: "select a connection on the left"})
+	connectionBox = &duit.Box{
+		Kids: duit.NewKids(noConnectionUI),
+	}
+
 	connectionValues := make([]*duit.ListValue, len(configConnections)+1)
 	for i, cc := range configConnections {
 		lv := &duit.ListValue{Text: cc.Name, Value: newConnUI(cc)}
@@ -110,20 +116,14 @@ func main() {
 	}
 	connectionValues[len(connectionValues)-1] = &duit.ListValue{Text: "<new>", Value: nil}
 
-	connectionPlaceholder := duit.NewMiddle(&duit.Label{Text: "select a connection on the left"})
-
-	connectionBox = &duit.Box{
-		Kids: duit.NewKids(connectionPlaceholder),
-	}
-
 	connections = &duit.List{
 		Values: connectionValues,
-		Changed: func(index int, r *duit.Result) {
-			r.Layout = true
+		Changed: func(index int, r *duit.Event) {
+			defer dui.MarkLayout(connectionBox)
 			disconnect.Disabled = true
 			lv := connections.Values[index]
 			if !lv.Selected {
-				connectionBox.Kids = duit.NewKids(connectionPlaceholder)
+				connectionBox.Kids = duit.NewKids(noConnectionUI)
 				return
 			}
 			if lv.Value == nil {
@@ -138,16 +138,16 @@ func main() {
 
 	toggleSlim := &duit.Button{
 		Text: "toggle left",
-		Click: func(r *duit.Result) {
+		Click: func(r *duit.Event) {
 			hideLeftBars = !hideLeftBars
-			r.Layout = true
-			r.Consumed = true
+			dui.MarkLayout(nil)
 		},
 	}
 	disconnect = &duit.Button{
 		Text:     "disconnect",
 		Disabled: true,
-		Click: func(r *duit.Result) {
+		Click: func(r *duit.Event) {
+			dui.MarkLayout(nil)
 			l := connections.Selected()
 			if len(l) != 1 {
 				return
@@ -155,12 +155,11 @@ func main() {
 			lv := connections.Values[l[0]]
 			cUI := lv.Value.(*connUI)
 			cUI.disconnect()
-			dui.Render()
 		},
 	}
 	status := &duit.Label{}
 
-	dui.Top = &duit.Box{
+	dui.Top.UI = &duit.Box{
 		Kids: duit.NewKids(
 			&duit.Box{
 				Padding: duit.SpaceXY(4, 2),
@@ -194,8 +193,11 @@ func main() {
 
 	for {
 		select {
-		case e := <-dui.Events:
-			dui.Event(e)
+		case e := <-dui.Inputs:
+			dui.Input(e)
+
+		case <-dui.Done:
+			return
 		}
 	}
 }

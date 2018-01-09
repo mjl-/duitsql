@@ -27,6 +27,10 @@ func newTableUI(dbUI *dbUI, query string) *tableUI {
 	return ui
 }
 
+func (ui *tableUI) layout() {
+	dui.MarkLayout(ui)
+}
+
 func (ui *tableUI) load() {
 	var lerr bool
 	defer func() {
@@ -43,8 +47,8 @@ func (ui *tableUI) load() {
 			return
 		}
 		dui.Call <- func() {
-			ui.Box.Kids = duit.NewKids(&duit.Label{Text: fmt.Sprintf("error: %s: %s", msg, err)})
-			dui.Draw()
+			defer ui.layout()
+			ui.Box.Kids = duit.NewKids(duit.NewMiddle(&duit.Label{Text: fmt.Sprintf("error: %s: %s", msg, err)}))
 		}
 		lerr = true
 		panic(lerr)
@@ -93,9 +97,9 @@ func (ui *tableUI) load() {
 	lcheck(err, "reading next row")
 
 	dui.Call <- func() {
+		defer ui.layout()
 		if len(gridRows) == 0 {
 			ui.Box.Kids = duit.NewKids(duit.NewMiddle(&duit.Label{Text: "empty resultset"}))
-			dui.Render()
 			return
 		}
 
@@ -108,6 +112,5 @@ func (ui *tableUI) load() {
 			Padding:  duit.SpaceXY(4, 4),
 		}
 		ui.Box.Kids = duit.NewKids(duit.NewScroll(ui.grid))
-		dui.Render()
 	}
 }

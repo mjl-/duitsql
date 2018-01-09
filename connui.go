@@ -18,6 +18,10 @@ type connUI struct {
 	*duit.Box
 }
 
+func (ui *connUI) layout() {
+	dui.MarkLayout(ui)
+}
+
 func newConnUI(cc configConnection) (ui *connUI) {
 	var databaseList *duit.List
 
@@ -27,7 +31,7 @@ func newConnUI(cc configConnection) (ui *connUI) {
 
 	cancel := &duit.Button{
 		Text: "cancel",
-		Click: func(r *duit.Result) {
+		Click: func(r *duit.Event) {
 			log.Printf("todo: should cancel new connection\n")
 		},
 	}
@@ -36,15 +40,15 @@ func newConnUI(cc configConnection) (ui *connUI) {
 	connect := &duit.Button{
 		Text:     "connect",
 		Colorset: &dui.Primary,
-		Click: func(result *duit.Result) {
-			result.Layout = true
+		Click: func(result *duit.Event) {
+			defer ui.layout()
 			ui.Box.Kids = duit.NewKids(connecting)
 
 			go func() {
 				setStatus := func(err error) {
 					dui.Call <- func() {
+						defer dui.MarkLayout(ui.databaseBox)
 						ui.databaseBox.Kids = duit.NewKids(&duit.Label{Text: "error: " + err.Error()})
-						dui.Render()
 					}
 				}
 				db, err := sql.Open("postgres", cc.connectionString(cc.Database))
@@ -77,6 +81,7 @@ func newConnUI(cc configConnection) (ui *connUI) {
 				}
 
 				dui.Call <- func() {
+					defer ui.layout()
 					ui.db = db
 					disconnect.Disabled = false
 					databaseList.Values = dbValues
@@ -86,18 +91,18 @@ func newConnUI(cc configConnection) (ui *connUI) {
 					}
 					ui.Box.Kids = duit.NewKids(databases)
 					ui.databaseBox.Kids = duit.NewKids(nui)
-					dui.Render()
 				}
 			}()
 		},
 	}
 	edit := &duit.Button{
 		Text: "edit",
-		Click: func(r *duit.Result) {
+		Click: func(r *duit.Event) {
+			defer ui.layout()
 			ui.Box.Kids = duit.NewKids(newSettingsUI(ui.cc, func() {
+				defer ui.layout()
 				ui.Box.Kids = duit.NewKids(ui.unconnected)
 			}))
-			r.Layout = true
 		},
 	}
 	ui.unconnected = duit.NewMiddle(
@@ -113,8 +118,8 @@ func newConnUI(cc configConnection) (ui *connUI) {
 		},
 	)
 	databaseList = &duit.List{
-		Changed: func(index int, result *duit.Result) {
-			result.Layout = true
+		Changed: func(index int, result *duit.Event) {
+			defer dui.MarkLayout(ui.databaseBox)
 			lv := databaseList.Values[index]
 			nui := noDBUI
 			shouldConnect := false
@@ -164,4 +169,5 @@ func (ui *connUI) disconnect() {
 	ui.db.Close()
 	ui.db = nil
 	ui.Box.Kids = duit.NewKids(ui.unconnected)
+	dui.MarkLayout(ui)
 }

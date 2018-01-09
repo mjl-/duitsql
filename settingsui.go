@@ -38,9 +38,12 @@ func newSettingsUI(cc configConnection, done func()) (ui *settingsUI) {
 		v, err := strconv.ParseInt(s, 10, 32)
 		return err == nil && v > 0 && v < 64*1024
 	}
-	check := func(_ string, r *duit.Result) {
+	check := func(_ string, r *duit.Event) {
+		o := primary.Disabled
 		primary.Disabled = conn.name.Text == "" || conn.host.Text == "" || (conn.port.Text != "" && !validPort(conn.port.Text))
-		r.Draw = true
+		if o != primary.Disabled {
+			dui.MarkDraw(primary)
+		}
 	}
 	conn.name.Changed = check
 	conn.host.Changed = check
@@ -55,7 +58,7 @@ func newSettingsUI(cc configConnection, done func()) (ui *settingsUI) {
 	primary = &duit.Button{
 		Text:     action,
 		Colorset: &dui.Primary,
-		Click: func(r *duit.Result) {
+		Click: func(r *duit.Event) {
 			port := int64(5432)
 			if conn.port.Text != "" {
 				port, _ = strconv.ParseInt(conn.port.Text, 10, 16)
@@ -78,14 +81,14 @@ func newSettingsUI(cc configConnection, done func()) (ui *settingsUI) {
 				connections.Unselect(nil)
 				connections.Values = append([]*duit.ListValue{lv}, connections.Values...)
 				connectionBox.Kids = duit.NewKids(cUI)
+				dui.MarkDraw(connections)
+				dui.MarkLayout(connectionBox)
 			} else {
 				index := connections.Selected()[0]
 				lv := connections.Values[index]
 				lv.Value.(*connUI).cc = cc
 				lv.Text = cc.Name
 			}
-
-			r.Layout = true
 
 			l := make([]configConnection, len(connections.Values)-1)
 			for i, lv := range connections.Values[:len(connections.Values)-1] {
@@ -96,7 +99,7 @@ func newSettingsUI(cc configConnection, done func()) (ui *settingsUI) {
 			done()
 		},
 	}
-	check("", &duit.Result{})
+	check("", &duit.Event{})
 	actionBox := &duit.Box{
 		Margin: image.Pt(6, 0),
 		Kids:   duit.NewKids(primary),
@@ -104,17 +107,19 @@ func newSettingsUI(cc configConnection, done func()) (ui *settingsUI) {
 	if origName != "" {
 		cancel := &duit.Button{
 			Text: "cancel",
-			Click: func(r *duit.Result) {
+			Click: func(r *duit.Event) {
 				done()
 			},
 		}
 		deleteButton := &duit.Button{
 			Text:     "delete",
 			Colorset: &dui.Danger,
-			Click: func(r *duit.Result) {
+			Click: func(r *duit.Event) {
+				defer dui.MarkLayout(nil)
+
 				sel := connections.Selected()
 				connections.Values[sel[0]].Selected = false
-				connections.Changed(sel[0], &duit.Result{}) // deselects connection
+				connections.Changed(sel[0], &duit.Event{}) // deselects connection
 
 				l := []configConnection{}
 				nvalues := []*duit.ListValue{}
@@ -130,7 +135,6 @@ func newSettingsUI(cc configConnection, done func()) (ui *settingsUI) {
 					}
 				}
 				connections.Values = nvalues
-				r.Layout = true
 				go saveConfigConnections(l)
 			},
 		}

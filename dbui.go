@@ -30,11 +30,15 @@ func newDBUI(cUI *connUI, dbName string) (ui *dbUI) {
 	return
 }
 
+func (ui *dbUI) layout() {
+	dui.MarkLayout(ui)
+}
+
 func (ui *dbUI) init() {
 	setStatus := func(err error) {
 		dui.Call <- func() {
+			defer ui.layout()
 			ui.Box.Kids = duit.NewKids(&duit.Label{Text: "error: " + err.Error()})
-			dui.Render()
 		}
 	}
 
@@ -71,10 +75,12 @@ func (ui *dbUI) init() {
 	}
 
 	dui.Call <- func() {
+		defer ui.layout()
 		ui.db = db
 		ui.tableList = &duit.List{
 			Values: values,
-			Changed: func(index int, r *duit.Result) {
+			Changed: func(index int, r *duit.Event) {
+				defer ui.layout()
 				lv := ui.tableList.Values[index]
 				var selUI duit.UI
 				if !lv.Selected {
@@ -87,7 +93,6 @@ func (ui *dbUI) init() {
 					}
 				}
 				ui.viewUI.Kids = duit.NewKids(selUI)
-				dui.Render()
 			},
 		}
 		ui.viewUI = &duit.Box{
@@ -113,6 +118,5 @@ func (ui *dbUI) init() {
 				),
 			},
 		)
-		dui.Render()
 	}
 }

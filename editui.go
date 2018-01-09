@@ -23,6 +23,10 @@ type editUI struct {
 	*duit.Vertical
 }
 
+func (ui *editUI) layout() {
+	dui.MarkLayout(ui)
+}
+
 func newEditUI(dbUI *dbUI) (ui *editUI) {
 	sqlPath := fmt.Sprintf("%s/lib/duit/sql/%s.%s.sql", os.Getenv("HOME"), dbUI.connUI.cc.Name, dbUI.dbName)
 
@@ -36,7 +40,7 @@ func newEditUI(dbUI *dbUI) (ui *editUI) {
 		}
 		sqlF.Close()
 	}
-	edit.Keys = func(k rune, m draw.Mouse, r *duit.Result) {
+	edit.Keys = func(k rune, m draw.Mouse, r *duit.Event) {
 		switch k {
 		case draw.KeyCmd + 'g':
 			log.Printf("executing command\n")
@@ -66,6 +70,7 @@ func newEditUI(dbUI *dbUI) (ui *editUI) {
 				query = string(buf)
 			}
 			log.Printf("query is %q\n", query)
+			defer ui.layout()
 			tabUI := newTableUI(ui.dbUI, query)
 			ui.tableBox.Kids = duit.NewKids(tabUI)
 			go tabUI.load()
