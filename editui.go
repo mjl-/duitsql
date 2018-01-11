@@ -24,7 +24,7 @@ type editUI struct {
 }
 
 func (ui *editUI) layout() {
-	dui.MarkLayout(ui)
+	dui.MarkLayout(nil) // xxx
 }
 
 func newEditUI(dbUI *dbUI) (ui *editUI) {
@@ -96,7 +96,11 @@ func newEditUI(dbUI *dbUI) (ui *editUI) {
 		r.Consumed = true
 	}
 	tableBox := &duit.Box{
-		Kids: duit.NewKids(duit.NewMiddle(&duit.Label{Text: "type a query and execute selection or query under cursor with cmd + g"})),
+		Kids: duit.NewKids(
+			duit.NewMiddle(
+				&duit.Label{Text: "type a query and execute selection or query under cursor with cmd + g"},
+			),
+		),
 	}
 	ui = &editUI{
 		dbUI:     dbUI,

@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"database/sql"
+	"time"
 
 	"github.com/mjl-/duit"
 )
@@ -14,7 +16,7 @@ type dbUI struct {
 	tableList *duit.List
 	viewUI    *duit.Box // holds 1 kid, the editUI, tableUI or placeholder label
 
-	*duit.Box
+	*duit.Box // holds either box with status message, or box with tableList and viewUI
 }
 
 func newDBUI(cUI *connUI, dbName string) (ui *dbUI) {
@@ -22,30 +24,53 @@ func newDBUI(cUI *connUI, dbName string) (ui *dbUI) {
 		connUI: cUI,
 		dbName: dbName,
 	}
-	busy := duit.NewMiddle(&duit.Label{Text: "listing tables..."})
-
-	ui.Box = &duit.Box{
-		Kids: duit.NewKids(busy),
-	}
+	ui.Box = &duit.Box{}
 	return
 }
 
 func (ui *dbUI) layout() {
-	dui.MarkLayout(ui)
+	dui.MarkLayout(nil) // xxx
+}
+
+func (ui *dbUI) error(err error) {
+	defer ui.layout()
+	msg := &duit.Label{Text: "error: " + err.Error()}
+	retry := &duit.Button{
+		Text: "retry",
+		Click: func(e *duit.Event) {
+			go ui.init()
+		},
+	}
+	ui.Box.Kids = duit.NewKids(middle(msg, retry))
 }
 
 func (ui *dbUI) init() {
-	setStatus := func(err error) {
+	setError := func(err error) {
 		dui.Call <- func() {
-			defer ui.layout()
-			ui.Box.Kids = duit.NewKids(&duit.Label{Text: "error: " + err.Error()})
+			ui.error(err)
 		}
 	}
 
 	db, err := sql.Open("postgres", ui.connUI.cc.connectionString(ui.dbName))
 	if err != nil {
-		setStatus(err)
+		setError(err)
 		return
+	}
+
+	ctx, cancelQueryFunc := context.WithTimeout(context.Background(), 15*time.Second)
+	dui.Call <- func() {
+		defer ui.layout()
+		ui.Box.Kids = duit.NewKids(
+			middle(
+				&duit.Label{Text: "listing tables..."},
+				&duit.Button{
+					Text: "cancel",
+					Click: func(e *duit.Event) {
+						cancelQueryFunc()
+					},
+				},
+			),
+		)
 	}
 	q := `
 		select coalesce(json_agg(x.name order by internal asc, name asc), '[]') from (
@@ -54,9 +79,9 @@ func (ui *dbUI) init() {
 		) x
 	`
 	var tables []string
-	err = parseRow(db.QueryRow(q), &tables, "listing tables in database")
+	err = parseRow(db.QueryRowContext(ctx, q), &tables, "listing tables in database")
 	if err != nil {
-		setStatus(err)
+		setError(err)
 		return
 	}
 

@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"database/sql"
-	"image"
 	"log"
 	"time"
 
@@ -131,29 +130,10 @@ func newConnUI(cc configConnection) (ui *connUI) {
 		},
 	}
 	ui.status = &duit.Label{}
-	ui.unconnected = duit.NewMiddle(
-		&duit.Grid{
-			Columns: 1,
-			Padding: duit.NSpace(1, duit.SpaceXY(4, 2)),
-			Halign:  []duit.Halign{duit.HalignMiddle},
-			Kids: duit.NewKids(
-				ui.status,
-				&duit.Box{
-					Margin: image.Pt(4, 2),
-					Kids:   duit.NewKids(connect, edit),
-				},
-			),
-		},
-	)
-	connecting = duit.NewMiddle(
-		&duit.Box{
-			Margin: image.Pt(4, 2),
-			Kids:   duit.NewKids(&duit.Label{Text: "connecting..."}, cancel),
-		},
-	)
+	ui.unconnected = middle(ui.status, connect, edit)
+	connecting = middle(&duit.Label{Text: "connecting..."}, cancel)
 	databaseList = &duit.List{
 		Changed: func(index int, result *duit.Event) {
-			defer dui.MarkLayout(ui.databaseBox)
 			lv := databaseList.Values[index]
 			nui := noDBUI
 			shouldConnect := false
@@ -163,6 +143,7 @@ func newConnUI(cc configConnection) (ui *connUI) {
 				shouldConnect = dbUI.db == nil
 			}
 			ui.databaseBox.Kids = duit.NewKids(nui)
+			dui.MarkLayout(ui.databaseBox)
 			if shouldConnect {
 				go lv.Value.(*dbUI).init()
 			}

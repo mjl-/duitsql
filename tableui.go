@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"reflect"
+	"context"
 
 	"github.com/mjl-/duit"
 )
@@ -20,15 +21,25 @@ func newTableUI(dbUI *dbUI, query string) *tableUI {
 	ui := &tableUI{
 		dbUI:  dbUI,
 		query: query,
-		Box: &duit.Box{
-			Kids: duit.NewKids(duit.NewMiddle(&duit.Label{Text: "fetching rows..."})),
-		},
+		Box: &duit.Box{},
 	}
 	return ui
 }
 
 func (ui *tableUI) layout() {
-	dui.MarkLayout(ui)
+	dui.MarkLayout(nil) // xxx
+}
+
+func (ui *tableUI) error(err error) {
+	defer ui.layout()
+	msg := &duit.Label{Text: fmt.Sprintf("error: %s", err)}
+	retry := &duit.Button{
+		Text: "retry",
+		Click: func(e *duit.Event) {
+			go ui.load()
+		},
+	}
+	ui.Box.Kids = duit.NewKids(middle(msg, retry))
 }
 
 func (ui *tableUI) load() {
@@ -47,14 +58,26 @@ func (ui *tableUI) load() {
 			return
 		}
 		dui.Call <- func() {
-			defer ui.layout()
-			ui.Box.Kids = duit.NewKids(duit.NewMiddle(&duit.Label{Text: fmt.Sprintf("error: %s: %s", msg, err)}))
+			ui.error(fmt.Errorf("%s: %s", msg, err))
 		}
 		lerr = true
 		panic(lerr)
 	}
 
-	rows, err := ui.dbUI.db.Query(ui.query)
+	ctx, cancelQueryFunc := context.WithCancel(context.Background())
+	dui.Call <- func() {
+		msg := &duit.Label{Text: "executing query..."}
+		cancel := &duit.Button{
+			Text: "cancel",
+			Click: func(e *duit.Event) {
+				cancelQueryFunc()
+			},
+		}
+		ui.Box.Kids = duit.NewKids(middle(msg, cancel))
+		ui.layout()
+	}
+
+	rows, err := ui.dbUI.db.QueryContext(ctx, ui.query)
 	lcheck(err, "fetching table")
 
 	colNames, err := rows.Columns()
@@ -97,9 +120,8 @@ func (ui *tableUI) load() {
 	lcheck(err, "reading next row")
 
 	dui.Call <- func() {
-		defer ui.layout()
 		if len(gridRows) == 0 {
-			ui.Box.Kids = duit.NewKids(duit.NewMiddle(&duit.Label{Text: "empty resultset"}))
+			ui.error(fmt.Errorf("empty resultset"))
 			return
 		}
 
@@ -112,5 +134,6 @@ func (ui *tableUI) load() {
 			Padding:  duit.SpaceXY(4, 4),
 		}
 		ui.Box.Kids = duit.NewKids(duit.NewScroll(ui.grid))
+		ui.layout()
 	}
 }
