@@ -1,10 +1,10 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"image"
 	"log"
-	"context"
 	"time"
 
 	"github.com/mjl-/duit"
@@ -18,7 +18,7 @@ type connUI struct {
 	cancelConnectFunc context.CancelFunc
 
 	unconnected duit.UI
-	status *duit.Label
+	status      *duit.Label
 
 	*duit.Box
 }
@@ -39,7 +39,6 @@ func newConnUI(cc configConnection) (ui *connUI) {
 	var noDBUI duit.UI = duit.NewMiddle(&duit.Label{Text: "select a database on the left"})
 
 	var connecting, databases duit.UI
-
 
 	cancel := &duit.Button{
 		Text: "cancel",
@@ -69,7 +68,7 @@ func newConnUI(cc configConnection) (ui *connUI) {
 				return
 			}
 
-			ctx, cancelFunc := context.WithTimeout(context.Background(), 15 * time.Second)
+			ctx, cancelFunc := context.WithTimeout(context.Background(), 15*time.Second)
 			ui.cancelConnectFunc = cancelFunc
 
 			go func() {
@@ -136,12 +135,12 @@ func newConnUI(cc configConnection) (ui *connUI) {
 		&duit.Grid{
 			Columns: 1,
 			Padding: duit.NSpace(1, duit.SpaceXY(4, 2)),
-			Halign: []duit.Halign{duit.HalignMiddle},
-			Kids:   duit.NewKids(
+			Halign:  []duit.Halign{duit.HalignMiddle},
+			Kids: duit.NewKids(
 				ui.status,
 				&duit.Box{
 					Margin: image.Pt(4, 2),
-					Kids: duit.NewKids(connect, edit),
+					Kids:   duit.NewKids(connect, edit),
 				},
 			),
 		},
