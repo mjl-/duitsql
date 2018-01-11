@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"image"
 	"log"
+	"context"
+	"time"
 
 	"github.com/mjl-/duit"
 )
@@ -13,13 +15,22 @@ type connUI struct {
 	db          *sql.DB
 	databaseBox *duit.Box // for the selected database, after connecting
 
+	cancelConnectFunc context.CancelFunc
+
 	unconnected duit.UI
+	status *duit.Label
 
 	*duit.Box
 }
 
 func (ui *connUI) layout() {
 	dui.MarkLayout(ui)
+}
+
+func (ui *connUI) error(err error) {
+	ui.status.Text = "error: " + err.Error()
+	ui.Box.Kids = duit.NewKids(ui.unconnected)
+	dui.MarkLayout(nil)
 }
 
 func newConnUI(cc configConnection) (ui *connUI) {
@@ -29,10 +40,17 @@ func newConnUI(cc configConnection) (ui *connUI) {
 
 	var connecting, databases duit.UI
 
+
 	cancel := &duit.Button{
 		Text: "cancel",
 		Click: func(r *duit.Event) {
-			log.Printf("todo: should cancel new connection\n")
+			if ui.cancelConnectFunc != nil {
+				ui.cancelConnectFunc()
+				ui.cancelConnectFunc = nil
+			} else {
+				// xxx it seems lib/pq doesn't cancel queries when it's causing a connect to an (unreachable) server
+				log.Printf("already canceled...\n")
+			}
 		},
 	}
 
@@ -43,24 +61,30 @@ func newConnUI(cc configConnection) (ui *connUI) {
 		Click: func(result *duit.Event) {
 			defer ui.layout()
 			ui.Box.Kids = duit.NewKids(connecting)
+			ui.status.Text = ""
+
+			db, err := sql.Open("postgres", cc.connectionString(cc.Database))
+			if err != nil {
+				ui.error(err)
+				return
+			}
+
+			ctx, cancelFunc := context.WithTimeout(context.Background(), 15 * time.Second)
+			ui.cancelConnectFunc = cancelFunc
 
 			go func() {
-				setStatus := func(err error) {
+				setError := func(err error) {
 					dui.Call <- func() {
-						defer dui.MarkLayout(ui.databaseBox)
-						ui.databaseBox.Kids = duit.NewKids(&duit.Label{Text: "error: " + err.Error()})
+						ui.error(err)
 					}
 				}
-				db, err := sql.Open("postgres", cc.connectionString(cc.Database))
-				if err != nil {
-					setStatus(err)
-					return
-				}
+
 				q := `select coalesce(json_agg(datname order by datname asc), '[]') from pg_database where not datistemplate`
 				var dbNames []string
-				err = parseRow(db.QueryRow(q), &dbNames, "parsing list of databases")
+				err = parseRow(db.QueryRowContext(ctx, q), &dbNames, "parsing list of databases")
+				defer cancelFunc()
 				if err != nil {
-					setStatus(err)
+					setError(err)
 					db.Close()
 					return
 				}
@@ -81,6 +105,8 @@ func newConnUI(cc configConnection) (ui *connUI) {
 				}
 
 				dui.Call <- func() {
+					ui.cancelConnectFunc = nil
+
 					defer ui.layout()
 					ui.db = db
 					disconnect.Disabled = false
@@ -105,10 +131,19 @@ func newConnUI(cc configConnection) (ui *connUI) {
 			}))
 		},
 	}
+	ui.status = &duit.Label{}
 	ui.unconnected = duit.NewMiddle(
-		&duit.Box{
-			Margin: image.Pt(4, 2),
-			Kids:   duit.NewKids(connect, edit),
+		&duit.Grid{
+			Columns: 1,
+			Padding: duit.NSpace(1, duit.SpaceXY(4, 2)),
+			Halign: []duit.Halign{duit.HalignMiddle},
+			Kids:   duit.NewKids(
+				ui.status,
+				&duit.Box{
+					Margin: image.Pt(4, 2),
+					Kids: duit.NewKids(connect, edit),
+				},
+			),
 		},
 	)
 	connecting = duit.NewMiddle(
