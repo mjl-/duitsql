@@ -19,7 +19,7 @@ func middle(msg *duit.Label, actions ...duit.UI) duit.UI {
 						msg,
 						&duit.Box{
 							Margin: image.Pt(4, 2),
-							Kids: duit.NewKids(actions...),
+							Kids:   duit.NewKids(actions...),
 						},
 					),
 				},

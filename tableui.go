@@ -1,9 +1,9 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"reflect"
-	"context"
 
 	"github.com/mjl-/duit"
 )
@@ -21,7 +21,7 @@ func newTableUI(dbUI *dbUI, query string) *tableUI {
 	ui := &tableUI{
 		dbUI:  dbUI,
 		query: query,
-		Box: &duit.Box{},
+		Box:   &duit.Box{},
 	}
 	return ui
 }
@@ -30,16 +30,16 @@ func (ui *tableUI) layout() {
 	dui.MarkLayout(nil) // xxx
 }
 
-func (ui *tableUI) error(err error) {
+func (ui *tableUI) status(msg string) {
 	defer ui.layout()
-	msg := &duit.Label{Text: fmt.Sprintf("error: %s", err)}
+	label := &duit.Label{Text: msg}
 	retry := &duit.Button{
 		Text: "retry",
 		Click: func(e *duit.Event) {
 			go ui.load()
 		},
 	}
-	ui.Box.Kids = duit.NewKids(middle(msg, retry))
+	ui.Box.Kids = duit.NewKids(middle(label, retry))
 }
 
 func (ui *tableUI) load() {
@@ -58,7 +58,7 @@ func (ui *tableUI) load() {
 			return
 		}
 		dui.Call <- func() {
-			ui.error(fmt.Errorf("%s: %s", msg, err))
+			ui.status(fmt.Sprintf("error: %s: %s", msg, err))
 		}
 		lerr = true
 		panic(lerr)
@@ -89,7 +89,9 @@ func (ui *tableUI) load() {
 	halign := make([]duit.Halign, len(colTypes))
 
 	vals := make([]interface{}, len(colTypes))
+	isBinary := make([]bool, len(colTypes))
 	for i, t := range colTypes {
+		isBinary[i] = t.DatabaseTypeName() == "BYTEA" // postgres
 		tt := t.ScanType()
 		vals[i] = reflect.New(reflect.PtrTo(tt)).Interface()
 		if tt.Kind() == reflect.String || len(colTypes) == 1 {
@@ -108,7 +110,15 @@ func (ui *tableUI) load() {
 			if vv.IsNil() || vv.Elem().IsNil() {
 				l[i] = "NULL"
 			} else {
-				l[i] = fmt.Sprintf("%v", vv.Elem().Elem().Interface())
+				v := vv.Elem().Elem().Interface()
+				// log.Printf("value %#v, %T\n", v, v)
+				if vv, ok := v.([]byte); ok {
+					v = string(vv)
+					if isBinary[i] {
+						v = fmt.Sprintf("%x", v)
+					}
+				}
+				l[i] = fmt.Sprintf("%v", v)
 			}
 		}
 		gridRow := &duit.Gridrow{
@@ -121,7 +131,7 @@ func (ui *tableUI) load() {
 
 	dui.Call <- func() {
 		if len(gridRows) == 0 {
-			ui.error(fmt.Errorf("empty resultset"))
+			ui.status(fmt.Sprintf("empty resultset"))
 			return
 		}
 
