@@ -20,7 +20,7 @@ type editUI struct {
 	edit      *duit.Edit
 	resultBox *duit.Box
 
-	*duit.Vertical
+	duit.Vertical
 }
 
 func (ui *editUI) layout() {
@@ -107,7 +107,7 @@ func newEditUI(dbUI *dbUI) (ui *editUI) {
 		sqlPath:   sqlPath,
 		edit:      edit,
 		resultBox: resultBox,
-		Vertical: &duit.Vertical{
+		Vertical: duit.Vertical{
 			Split: func(height int) []int {
 				half := height / 2
 				return []int{half, height - half}

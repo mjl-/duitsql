@@ -14,14 +14,13 @@ type resultUI struct {
 	query string
 	grid  *duit.Gridlist
 
-	*duit.Box
+	duit.Box
 }
 
 func newResultUI(dbUI *dbUI, query string) *resultUI {
 	ui := &resultUI{
 		dbUI:  dbUI,
 		query: query,
-		Box:   &duit.Box{},
 	}
 	return ui
 }

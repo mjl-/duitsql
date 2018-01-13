@@ -20,7 +20,7 @@ type connUI struct {
 	unconnected duit.UI
 	status      *duit.Label
 
-	*duit.Box
+	duit.Box
 }
 
 func (ui *connUI) layout() {
@@ -174,9 +174,7 @@ func newConnUI(cc configConnection) (ui *connUI) {
 			ui.databaseBox,
 		),
 	}
-	ui.Box = &duit.Box{
-		Kids: duit.NewKids(ui.unconnected),
-	}
+	ui.Box.Kids = duit.NewKids(ui.unconnected)
 	return
 }
 

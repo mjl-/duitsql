@@ -17,7 +17,7 @@ type dbUI struct {
 	tableList *duit.Gridlist
 	contentUI *duit.Box // holds 1 kid, the editUI, tableUI, viewUI or placeholder label
 
-	*duit.Box // holds either box with status message, or box with tableList and contentUI
+	duit.Box // holds either box with status message, or box with tableList and contentUI
 }
 
 func newDBUI(cUI *connUI, dbName string) (ui *dbUI) {
@@ -25,7 +25,6 @@ func newDBUI(cUI *connUI, dbName string) (ui *dbUI) {
 		connUI: cUI,
 		dbName: dbName,
 	}
-	ui.Box = &duit.Box{}
 	return
 }
 

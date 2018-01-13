@@ -9,7 +9,7 @@ import (
 )
 
 type settingsUI struct {
-	*duit.Box
+	duit.Box
 }
 
 func newSettingsUI(cc configConnection, done func()) (ui *settingsUI) {
@@ -141,50 +141,48 @@ func newSettingsUI(cc configConnection, done func()) (ui *settingsUI) {
 		actionBox.Kids = duit.NewKids(primary, cancel, deleteButton)
 	}
 
-	ui.Box = &duit.Box{
-		Kids: duit.NewKids(
-			duit.NewMiddle(
-				&duit.Box{
-					MaxWidth: 350,
-					Kids: duit.NewKids(
-						duit.CenterUI(duit.SpaceXY(4, 2), &duit.Label{Text: title, Font: bold}),
-						&duit.Grid{
-							Columns: 2,
-							Padding: []duit.Space{
-								duit.SpaceXY(4, 2),
-								duit.SpaceXY(4, 2),
-							},
-							Halign: []duit.Halign{
-								duit.HalignRight,
-								duit.HalignLeft,
-							},
-							Valign: []duit.Valign{
-								duit.ValignMiddle,
-								duit.ValignMiddle,
-							},
-							Kids: duit.NewKids(
-								&duit.Label{Text: "name"},
-								conn.name,
-								&duit.Label{Text: "host"},
-								conn.host,
-								&duit.Label{Text: "port"},
-								conn.port,
-								&duit.Label{Text: "user"},
-								conn.user,
-								&duit.Label{Text: "password"},
-								conn.password,
-								&duit.Label{Text: "database"},
-								conn.database,
-								conn.tls,
-								&duit.Label{Text: "require TLS"},
-								&duit.Label{},
-								actionBox,
-							),
+	ui.Box.Kids = duit.NewKids(
+		duit.NewMiddle(
+			&duit.Box{
+				MaxWidth: 350,
+				Kids: duit.NewKids(
+					duit.CenterUI(duit.SpaceXY(4, 2), &duit.Label{Text: title, Font: bold}),
+					&duit.Grid{
+						Columns: 2,
+						Padding: []duit.Space{
+							duit.SpaceXY(4, 2),
+							duit.SpaceXY(4, 2),
 						},
-					),
-				},
-			),
+						Halign: []duit.Halign{
+							duit.HalignRight,
+							duit.HalignLeft,
+						},
+						Valign: []duit.Valign{
+							duit.ValignMiddle,
+							duit.ValignMiddle,
+						},
+						Kids: duit.NewKids(
+							&duit.Label{Text: "name"},
+							conn.name,
+							&duit.Label{Text: "host"},
+							conn.host,
+							&duit.Label{Text: "port"},
+							conn.port,
+							&duit.Label{Text: "user"},
+							conn.user,
+							&duit.Label{Text: "password"},
+							conn.password,
+							&duit.Label{Text: "database"},
+							conn.database,
+							conn.tls,
+							&duit.Label{Text: "require TLS"},
+							&duit.Label{},
+							actionBox,
+						),
+					},
+				),
+			},
 		),
-	}
+	)
 	return
 }

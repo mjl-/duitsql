@@ -9,14 +9,13 @@ type viewUI struct {
 	name     string
 	resultUI *resultUI
 	tabsUI   *duit.Tabs
-	*duit.Box
+	duit.Box
 }
 
 func newViewUI(dbUI *dbUI, name string) *viewUI {
 	ui := &viewUI{
 		dbUI: dbUI,
 		name: name,
-		Box:  &duit.Box{},
 	}
 	return ui
 }
