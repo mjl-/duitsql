@@ -62,6 +62,7 @@ func (ui *resultUI) load() {
 		panic(lerr)
 	}
 
+	status := label("executing query...")
 	ctx, cancelQueryFunc := context.WithCancel(context.Background())
 	defer cancelQueryFunc()
 	dui.Call <- func() {
@@ -71,7 +72,7 @@ func (ui *resultUI) load() {
 				cancelQueryFunc()
 			},
 		}
-		ui.Box.Kids = duit.NewKids(middle(label("executing query..."), cancel))
+		ui.Box.Kids = duit.NewKids(middle(status, cancel))
 		ui.layout()
 	}
 
@@ -86,7 +87,8 @@ func (ui *resultUI) load() {
 			case <-ticker.C:
 				n++
 				dui.Call <- func() {
-					ui.status(fmt.Sprintf("executing query... %ds", n))
+					status.Text = fmt.Sprintf("executing query... %ds", n)
+					ui.layout()
 				}
 			}
 		}
