@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"image"
 
@@ -26,14 +27,13 @@ func (ui *tablestructUI) layout() {
 }
 
 func (ui *tablestructUI) status(msg string) {
-	label := &duit.Label{Text: msg}
 	retry := &duit.Button{
 		Text: "retry",
 		Click: func(e *duit.Event) {
 			ui.init()
 		},
 	}
-	ui.Box.Kids = duit.NewKids(middle(label, retry))
+	ui.Box.Kids = duit.NewKids(middle(label(msg), retry))
 	ui.layout()
 }
 
@@ -79,28 +79,65 @@ func (ui *tablestructUI) _load(ctx context.Context, cancelQueryFunc func()) {
 		panic(lerr)
 	}
 
-	qColumns := `
-		select coalesce(json_agg(x.*), '[]')
-		from (
+	var qColumns string
+	var args []interface{}
+	switch ui.dbUI.connUI.cc.Type {
+	case "postgres":
+		qColumns = `
 			select
 				column_name as name,
 				udt_name as type,
-				column_default as default,
+				column_default as ddefault_valueefault,
 				is_nullable = 'YES' as isnullable
 			from information_schema.columns
 			where table_schema || '.' || table_name=$1
 			order by ordinal_position
-		) x
-	`
+		`
+		args = append(args, ui.name)
+	case "mysql":
+		qColumns = `
+			select
+				column_name as name,
+				data_type as type,
+				column_default as default_value,
+				is_nullable = 'YES' as isnullable
+			from information_schema.columns
+			where table_schema=? and table_name=?
+			order by ordinal_position
+		`
+		args = append(args, ui.dbUI.dbName, ui.name)
+	case "sqlserver":
+		qColumns = `
+			select
+				column_name as name,
+				data_type as type,
+				column_default as default_value,
+				case when is_nullable = 'YES' then 1 else 0 end as isnullable
+			from information_schema.columns
+			-- where concat(table_schema, '.', table_name)=@name
+			order by ordinal_position
+		`
+		args = append(args, sql.Named("name", ui.name))
+	default:
+		panic("bad connection type")
+	}
 	type column struct {
-		Name       string
-		Type       string
-		Default    string
-		IsNullable bool
+		Name         sql.NullString
+		Type         sql.NullString
+		DefaultValue sql.NullString
+		IsNullable   bool
 	}
 	var columns []column
-	err := parseRow(ui.dbUI.db.QueryRowContext(ctx, qColumns, ui.name), &columns)
+	rows, err := ui.dbUI.db.QueryContext(ctx, qColumns, args...)
 	lcheck(err, "fetching columns")
+	defer rows.Close()
+	for rows.Next() {
+		var col column
+		err = rows.Scan(&col.Name, &col.Type, &col.DefaultValue, &col.IsNullable)
+		lcheck(err, "scanning row")
+		columns = append(columns, col)
+	}
+	lcheck(rows.Err(), "reading row")
 
 	columnUIs := []duit.UI{
 		&duit.Label{Font: bold, Text: "name"},
@@ -114,9 +151,9 @@ func (ui *tablestructUI) _load(ctx context.Context, cancelQueryFunc func()) {
 			nullable = "NULL"
 		}
 		columnUIs = append(columnUIs,
-			&duit.Label{Text: e.Name},
-			&duit.Label{Text: e.Type},
-			&duit.Label{Text: e.Default},
+			&duit.Label{Text: e.Name.String},
+			&duit.Label{Text: e.Type.String},
+			&duit.Label{Text: e.DefaultValue.String},
 			&duit.Label{Text: nullable},
 		)
 	}

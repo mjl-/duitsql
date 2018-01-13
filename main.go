@@ -7,15 +7,20 @@ import (
 	"fmt"
 	"image"
 	"log"
+	"net/url"
 	"os"
 	"path"
+	"strings"
 
 	"9fans.net/go/draw"
+	_ "github.com/denisenkom/go-mssqldb"
+	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
 	"github.com/mjl-/duit"
 )
 
 type configConnection struct {
+	Type     string // postgres, mysql, sqlserver
 	Name     string
 	Host     string
 	Port     int
@@ -26,15 +31,60 @@ type configConnection struct {
 }
 
 func (cc configConnection) connectionString(dbName string) string {
-	tls := "disable"
-	if cc.TLS {
-		tls = "verify-full"
+	switch cc.Type {
+	case "postgres":
+		tls := "disable"
+		if cc.TLS {
+			tls = "verify-full"
+		}
+		s := fmt.Sprintf("user=%s password=%s host=%s port=%d sslmode=%s application_name=duitsql", cc.User, cc.Password, cc.Host, cc.Port, tls)
+		if dbName != "" {
+			s += fmt.Sprintf(" dbname=%s", dbName)
+		}
+		return s
+	case "mysql":
+		s := ""
+		if cc.User != "" || cc.Password != "" {
+			s += cc.User
+			if cc.Password != "" {
+				s += ":" + cc.Password
+			}
+			s += "@"
+		}
+		address := cc.Host
+		if cc.Port != 0 {
+			address += fmt.Sprintf(":%d", cc.Port)
+		}
+		s += fmt.Sprintf("tcp(%s)", address)
+		s += "/"
+		if dbName != "" {
+			s += dbName
+		}
+		if cc.TLS {
+			s += "?tls=true"
+		}
+		return s
+	case "sqlserver":
+		host := cc.Host
+		if cc.Port != 0 {
+			host += fmt.Sprintf(":%d", cc.Port)
+		}
+		qs := []string{}
+		if dbName != "" {
+			qs = append(qs, "database="+url.QueryEscape(dbName))
+		}
+		if cc.TLS {
+			qs = append(qs, "encrypt=true", "TrustServerCertificate=false")
+		}
+		u := &url.URL{
+			Scheme:   "sqlserver",
+			User:     url.UserPassword(cc.User, cc.Password),
+			Host:     host,
+			RawQuery: strings.Join(qs, "&"),
+		}
+		return u.String()
 	}
-	s := fmt.Sprintf("user=%s password=%s host=%s port=%d sslmode=%s application_name=duitsql", cc.User, cc.Password, cc.Host, cc.Port, tls)
-	if dbName != "" {
-		s += fmt.Sprintf(" dbname=%s", dbName)
-	}
-	return s
+	panic("missing case")
 }
 
 var (
@@ -53,7 +103,7 @@ func check(err error, msg string) {
 }
 
 func saveConfigConnections(l []configConnection) {
-	p := os.Getenv("HOME") + "/lib/duit/sql/connections.json"
+	p := os.Getenv("HOME") + "/lib/duitsql/connections.json"
 	os.MkdirAll(path.Dir(p), 0777)
 	f, err := os.Create(p)
 	if err == nil {
@@ -94,7 +144,7 @@ func main() {
 	}
 
 	var configConnections []configConnection
-	f, err := os.Open(os.Getenv("HOME") + "/lib/duit/sql/connections.json")
+	f, err := os.Open(os.Getenv("HOME") + "/lib/duitsql/connections.json")
 	if err != nil && !os.IsNotExist(err) {
 		check(err, "opening connections.json config file")
 	}
@@ -102,6 +152,13 @@ func main() {
 		err = json.NewDecoder(f).Decode(&configConnections)
 		check(err, "parsing connections.json config file")
 		check(f.Close(), "closing connections.json config file")
+	}
+	for _, cc := range configConnections {
+		switch cc.Type {
+		case "postgres", "mysql", "sqlserver":
+		default:
+			log.Fatalf("unknown connection type %q\n", cc.Type)
+		}
 	}
 
 	noConnectionUI := duit.NewMiddle(&duit.Label{Text: "select a connection on the left"})
@@ -127,7 +184,7 @@ func main() {
 				return
 			}
 			if lv.Value == nil {
-				connectionBox.Kids = duit.NewKids(newSettingsUI(configConnection{}, func() {}))
+				connectionBox.Kids = duit.NewKids(newSettingsUI(configConnection{Type: "postgres"}, func() {}))
 				return
 			}
 			cUI := lv.Value.(*connUI)

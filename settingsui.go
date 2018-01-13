@@ -23,17 +23,46 @@ func newSettingsUI(cc configConnection, done func()) (ui *settingsUI) {
 	}
 	var primary *duit.Button
 	var conn = struct {
+		typePostgres, typeMysql, typeSqlserver     *duit.Radiobutton
 		name, host, port, user, password, database *duit.Field
 		tls                                        *duit.Checkbox
 	}{
+		&duit.Radiobutton{Value: "postgres"},
+		&duit.Radiobutton{Value: "mysql"},
+		&duit.Radiobutton{Value: "sqlserver"},
 		&duit.Field{Placeholder: "name...", Text: cc.Name},
 		&duit.Field{Placeholder: "localhost", Text: cc.Host},
-		&duit.Field{Placeholder: "5432", Text: port},
+		&duit.Field{Placeholder: "port...", Text: port},
 		&duit.Field{Placeholder: "user name...", Text: cc.User},
 		&duit.Field{Placeholder: "password...", Password: true, Text: cc.Password},
 		&duit.Field{Placeholder: "database (optional)", Text: cc.Database},
 		&duit.Checkbox{Checked: cc.TLS},
 	}
+	dbtypes := []*duit.Radiobutton{
+		conn.typePostgres,
+		conn.typeMysql,
+		conn.typeSqlserver,
+	}
+	conn.typePostgres.Group = dbtypes
+	conn.typeMysql.Group = dbtypes
+	conn.typeSqlserver.Group = dbtypes
+	switch cc.Type {
+	case "postgres":
+		conn.typePostgres.Selected = true
+	case "mysql":
+		conn.typeMysql.Selected = true
+	case "sqlserver":
+		conn.typeSqlserver.Selected = true
+	}
+	radiobuttonValue := func(group []*duit.Radiobutton) interface{} {
+		for _, e := range group {
+			if e.Selected {
+				return e.Value
+			}
+		}
+		return nil
+	}
+
 	validPort := func(s string) bool {
 		v, err := strconv.ParseInt(s, 10, 32)
 		return err == nil && v > 0 && v < 64*1024
@@ -59,11 +88,12 @@ func newSettingsUI(cc configConnection, done func()) (ui *settingsUI) {
 		Text:     action,
 		Colorset: &dui.Primary,
 		Click: func(r *duit.Event) {
-			port := int64(5432)
+			port := int64(0)
 			if conn.port.Text != "" {
 				port, _ = strconv.ParseInt(conn.port.Text, 10, 16)
 			}
 			cc := configConnection{
+				Type:     radiobuttonValue(dbtypes).(string),
 				Name:     conn.name.Text,
 				Host:     conn.host.Text,
 				Port:     int(port),
@@ -162,21 +192,48 @@ func newSettingsUI(cc configConnection, done func()) (ui *settingsUI) {
 							duit.ValignMiddle,
 						},
 						Kids: duit.NewKids(
-							&duit.Label{Text: "name"},
+							label("type"),
+							&duit.Box{
+								Margin: image.Pt(2, 0),
+								Kids: duit.NewKids(
+									conn.typePostgres,
+									&duit.Label{
+										Text: "postgres",
+										Click: func(e *duit.Event) {
+											conn.typePostgres.Select(dui)
+										},
+									},
+									conn.typeMysql,
+									&duit.Label{
+										Text: "mysql",
+										Click: func(e *duit.Event) {
+											conn.typeMysql.Select(dui)
+										},
+									},
+									conn.typeSqlserver,
+									&duit.Label{
+										Text: "sqlserver",
+										Click: func(e *duit.Event) {
+											conn.typeSqlserver.Select(dui)
+										},
+									},
+								),
+							},
+							label("name"),
 							conn.name,
-							&duit.Label{Text: "host"},
+							label("host"),
 							conn.host,
-							&duit.Label{Text: "port"},
+							label("port"),
 							conn.port,
-							&duit.Label{Text: "user"},
+							label("user"),
 							conn.user,
-							&duit.Label{Text: "password"},
+							label("password"),
 							conn.password,
-							&duit.Label{Text: "database"},
+							label("database"),
 							conn.database,
 							conn.tls,
-							&duit.Label{Text: "require TLS"},
-							&duit.Label{},
+							label("require TLS"),
+							label(""),
 							actionBox,
 						),
 					},

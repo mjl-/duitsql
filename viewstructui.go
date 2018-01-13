@@ -81,33 +81,79 @@ func (ui *viewstructUI) _load(ctx context.Context, cancelQueryFunc func()) {
 		panic(lerr)
 	}
 
-	qView := `
-		select view_definition
-		from information_schema.views
-		where table_schema || '.' || table_name = $1
-	`
-	var definition sql.NullString
-	err := ui.dbUI.db.QueryRowContext(ctx, qView, ui.name).Scan(&definition)
-	lcheck(err, "fetching view definition")
-
-	qColumns := `
-		select coalesce(json_agg(x.*), '[]')
-		from (
+	var qDefinition, qColumns string
+	var args []interface{}
+	switch ui.dbUI.connUI.cc.Type {
+	case "postgres":
+		qDefinition = `
+			select view_definition
+			from information_schema.views
+			where table_schema || '.' || table_name = $1
+		`
+		qColumns = `
 			select
 				column_name as name,
 				udt_name as type
 			from information_schema.columns
 			where table_schema || '.' || table_name=$1
 			order by ordinal_position
-		) x
-	`
+		`
+		args = append(args, ui.name)
+	case "mysql":
+		qDefinition = `
+			select view_definition
+			from information_schema.views
+			where table_schema=? and table_name=?
+		`
+		// todo: more complete type, eg size to varchar and ints and such
+		qColumns = `
+			select
+				column_name as name,
+				data_type as type
+			from information_schema.columns
+			where table_schema=? and table_name=?
+			order by ordinal_position
+		`
+		args = append(args, ui.dbUI.dbName, ui.name)
+	case "sqlserver":
+		qDefinition = `
+			select view_definition
+			from information_schema.views
+			where concat(table_schema, '.', table_name)=@name
+		`
+		// todo: more complete type, eg size to varchar and ints and such
+		qColumns = `
+			select
+				column_name as name,
+				data_type as type
+			from information_schema.columns
+			where concat(table_schema, '.', table_name)=@name
+			order by ordinal_position
+		`
+		args = append(args, sql.Named("name", ui.name))
+	default:
+		panic("bad connection type")
+	}
+
+	var definition sql.NullString
+	err := ui.dbUI.db.QueryRowContext(ctx, qDefinition, args...).Scan(&definition)
+	lcheck(err, "fetching view definition")
+
 	type column struct {
 		Name string
 		Type string
 	}
 	var columns []column
-	err = parseRow(ui.dbUI.db.QueryRowContext(ctx, qColumns, ui.name), &columns)
+	rows, err := ui.dbUI.db.QueryContext(ctx, qColumns, args...)
 	lcheck(err, "fetching columns")
+	defer rows.Close()
+	for rows.Next() {
+		var col column
+		err = rows.Scan(&col.Name, &col.Type)
+		lcheck(err, "scanning row")
+		columns = append(columns, col)
+	}
+	lcheck(rows.Err(), "reading row")
 
 	var columnUIs []duit.UI
 	for _, e := range columns {

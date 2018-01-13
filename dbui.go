@@ -51,7 +51,7 @@ func (ui *dbUI) init() {
 		}
 	}
 
-	db, err := sql.Open("postgres", ui.connUI.cc.connectionString(ui.dbName))
+	db, err := sql.Open(ui.connUI.cc.Type, ui.connUI.cc.connectionString(ui.dbName))
 	if err != nil {
 		setError(err)
 		return
@@ -72,21 +72,61 @@ func (ui *dbUI) init() {
 			),
 		)
 	}
-	q := `
-		select coalesce(json_agg(x.*), '[]') from (
+
+	var q string
+	var args []interface{}
+	switch ui.connUI.cc.Type {
+	case "postgres":
+		q = `
 			select
 				table_type = 'VIEW' as is_view,
-				table_schema in ('pg_catalog', 'information_schema') as internal, table_schema || '.' || table_name as name
+				table_schema || '.' || table_name as name
 			from information_schema.tables
-			order by internal asc, name asc
-		) x
-	`
+			order by table_schema in ('pg_catalog', 'information_schema') asc, name asc
+		`
+	case "mysql":
+		// in mysql, schema & database are the same concept, so no need to add the schema to the name here
+		q = `
+			select
+				table_type like '%VIEW' as is_view,
+				table_name as name
+			from information_schema.tables
+			where table_schema = ?
+			order by name asc
+		`
+		args = append(args, ui.dbName)
+	case "sqlserver":
+		q = `
+			select
+				case table_type when 'VIEW' then 1 else 0 end,
+				concat(table_schema, '.', table_name) as name
+			from information_schema.tables
+			order by name
+		`
+	default:
+		panic("bad connection type")
+	}
 	type object struct {
 		IsView bool   `json:"is_view"`
 		Name   string `json:"name"`
 	}
 	var objects []object
-	err = parseRow(db.QueryRowContext(ctx, q), &objects)
+	err = func() error {
+		rows, err := db.QueryContext(ctx, q, args...)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var o object
+			err = rows.Scan(&o.IsView, &o.Name)
+			if err != nil {
+				return err
+			}
+			objects = append(objects, o)
+		}
+		return rows.Err()
+	}()
 	if err != nil {
 		setError(fmt.Errorf("listing tables in database: %s", err))
 		return

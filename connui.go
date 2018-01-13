@@ -62,7 +62,7 @@ func newConnUI(cc configConnection) (ui *connUI) {
 			ui.Box.Kids = duit.NewKids(connecting)
 			ui.status.Text = ""
 
-			db, err := sql.Open("postgres", cc.connectionString(cc.Database))
+			db, err := sql.Open(cc.Type, cc.connectionString(cc.Database))
 			if err != nil {
 				ui.error(err)
 				return
@@ -78,13 +78,42 @@ func newConnUI(cc configConnection) (ui *connUI) {
 					}
 				}
 
-				q := `select coalesce(json_agg(datname order by datname asc), '[]') from pg_database where not datistemplate`
-				var dbNames []string
-				err = parseRow(db.QueryRowContext(ctx, q), &dbNames)
-				defer cancelFunc()
-				if err != nil {
-					setError(fmt.Errorf("parsing list of databases: %s", err))
-					db.Close()
+				queryNames := func(q string) (l []string, ok bool) {
+					rows, err := db.QueryContext(ctx, q)
+					if err == nil {
+						for rows.Next() && err == nil {
+							var name string
+							err = rows.Scan(&name)
+							l = append(l, name)
+						}
+						if err == nil {
+							err = rows.Err()
+						}
+					}
+					if rows != nil {
+						rows.Close()
+					}
+					if err != nil {
+						setError(fmt.Errorf("fetching list of databases: %s", err))
+						db.Close()
+						return nil, false
+					}
+					return l, true
+				}
+
+				var q string
+				switch cc.Type {
+				default:
+					panic("bad connection type")
+				case "", "postgres":
+					q = `select datname from pg_database where not datistemplate order by datname asc`
+				case "mysql":
+					q = `select schema_name from information_schema.schemata order by schema_name in ('information_schema', 'performance_schema', 'sys', 'mysql') asc, schema_name asc`
+				case "sqlserver":
+					q = `select name from master.dbo.sysdatabases where name not in ('master', 'tempdb', 'model', 'msdb') order by name asc`
+				}
+				dbNames, ok := queryNames(q)
+				if !ok {
 					return
 				}
 
@@ -132,7 +161,7 @@ func newConnUI(cc configConnection) (ui *connUI) {
 	}
 	ui.status = &duit.Label{}
 	ui.unconnected = middle(ui.status, connect, edit)
-	connecting = middle(&duit.Label{Text: "connecting..."}, cancel)
+	connecting = middle(label("connecting..."), cancel)
 	databaseList = &duit.List{
 		Changed: func(index int, result *duit.Event) {
 			lv := databaseList.Values[index]
