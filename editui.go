@@ -16,9 +16,9 @@ import (
 type editUI struct {
 	dbUI *dbUI
 
-	sqlPath  string
-	edit     *duit.Edit
-	tableBox *duit.Box
+	sqlPath   string
+	edit      *duit.Edit
+	resultBox *duit.Box
 
 	*duit.Vertical
 }
@@ -71,8 +71,8 @@ func newEditUI(dbUI *dbUI) (ui *editUI) {
 			}
 			log.Printf("query is %q\n", query)
 			defer ui.layout()
-			tabUI := newTableUI(ui.dbUI, query)
-			ui.tableBox.Kids = duit.NewKids(tabUI)
+			tabUI := newResultUI(ui.dbUI, query)
+			ui.resultBox.Kids = duit.NewKids(tabUI)
 			go tabUI.load()
 
 		case draw.KeyCmd + 's':
@@ -95,7 +95,7 @@ func newEditUI(dbUI *dbUI) (ui *editUI) {
 		}
 		r.Consumed = true
 	}
-	tableBox := &duit.Box{
+	resultBox := &duit.Box{
 		Kids: duit.NewKids(
 			duit.NewMiddle(
 				&duit.Label{Text: "type a query and execute selection or query under cursor with cmd + g"},
@@ -103,16 +103,16 @@ func newEditUI(dbUI *dbUI) (ui *editUI) {
 		),
 	}
 	ui = &editUI{
-		dbUI:     dbUI,
-		sqlPath:  sqlPath,
-		edit:     edit,
-		tableBox: tableBox,
+		dbUI:      dbUI,
+		sqlPath:   sqlPath,
+		edit:      edit,
+		resultBox: resultBox,
 		Vertical: &duit.Vertical{
 			Split: func(height int) []int {
 				half := height / 2
 				return []int{half, height - half}
 			},
-			Kids: duit.NewKids(edit, tableBox),
+			Kids: duit.NewKids(edit, resultBox),
 		},
 	}
 	return

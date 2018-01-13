@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"time"
 
 	"github.com/mjl-/duit"
@@ -13,10 +14,10 @@ type dbUI struct {
 	dbName string
 	db     *sql.DB
 
-	tableList *duit.List
-	viewUI    *duit.Box // holds 1 kid, the editUI, tableUI or placeholder label
+	tableList *duit.Gridlist
+	contentUI *duit.Box // holds 1 kid, the editUI, tableUI, viewUI or placeholder label
 
-	*duit.Box // holds either box with status message, or box with tableList and viewUI
+	*duit.Box // holds either box with status message, or box with tableList and contentUI
 }
 
 func newDBUI(cUI *connUI, dbName string) (ui *dbUI) {
@@ -73,55 +74,80 @@ func (ui *dbUI) init() {
 		)
 	}
 	q := `
-		select coalesce(json_agg(x.name order by internal asc, name asc), '[]') from (
-			select table_schema in ('pg_catalog', 'information_schema') as internal, table_schema || '.' || table_name as name
+		select coalesce(json_agg(x.*), '[]') from (
+			select
+				table_type = 'VIEW' as is_view,
+				table_schema in ('pg_catalog', 'information_schema') as internal, table_schema || '.' || table_name as name
 			from information_schema.tables
+			order by internal asc, name asc
 		) x
 	`
-	var tables []string
-	err = parseRow(db.QueryRowContext(ctx, q), &tables, "listing tables in database")
+	type object struct {
+		IsView bool   `json:"is_view"`
+		Name   string `json:"name"`
+	}
+	var objects []object
+	err = parseRow(db.QueryRowContext(ctx, q), &objects)
 	if err != nil {
-		setError(err)
+		setError(fmt.Errorf("listing tables in database: %s", err))
 		return
 	}
 
-	editUI := newEditUI(ui)
-	values := make([]*duit.ListValue, 1+len(tables))
-	values[0] = &duit.ListValue{
+	eUI := newEditUI(ui)
+	values := make([]*duit.Gridrow, 1+len(objects))
+	values[0] = &duit.Gridrow{
 		Selected: true,
-		Text:     "<sql>",
-		Value:    editUI,
+		Values:   []string{"", "<sql>"},
+		Value:    eUI,
 	}
-	for i, tabName := range tables {
-		values[i+1] = &duit.ListValue{
-			Text:  tabName,
-			Value: newTableUI(ui, "select * from "+tabName),
+	for i, obj := range objects {
+		var objUI duit.UI
+		var kind string
+		if obj.IsView {
+			objUI = newViewUI(ui, obj.Name)
+			kind = "V"
+		} else {
+			objUI = newTableUI(ui, obj.Name)
+			kind = "T"
+		}
+		values[i+1] = &duit.Gridrow{
+			Values: []string{
+				kind,
+				obj.Name,
+			},
+			Value: objUI,
 		}
 	}
 
 	dui.Call <- func() {
 		defer ui.layout()
 		ui.db = db
-		ui.tableList = &duit.List{
-			Values: values,
+		ui.tableList = &duit.Gridlist{
+			Header: duit.Gridrow{
+				Values: []string{"", ""},
+			},
+			Rows: values,
 			Changed: func(index int, r *duit.Event) {
 				defer ui.layout()
-				lv := ui.tableList.Values[index]
+				lv := ui.tableList.Rows[index]
 				var selUI duit.UI
 				if !lv.Selected {
 					selUI = duit.NewMiddle(&duit.Label{Text: "select <sql>, or a a table or view on the left"})
 				} else {
 					selUI = lv.Value.(duit.UI)
-					tUI, ok := selUI.(*tableUI)
-					if ok && tUI.grid == nil {
-						go tUI.load()
+					switch objUI := selUI.(type) {
+					case *editUI:
+					case *tableUI:
+						objUI.init()
+					case *viewUI:
+						objUI.init()
 					}
 				}
-				ui.viewUI.Kids = duit.NewKids(selUI)
+				ui.contentUI.Kids = duit.NewKids(selUI)
 			},
 		}
-		ui.viewUI = &duit.Box{
-			Kids: duit.NewKids(editUI),
+		ui.contentUI = &duit.Box{
+			Kids: duit.NewKids(eUI),
 		}
 		ui.Box.Kids = duit.NewKids(
 			&duit.Horizontal{
@@ -139,7 +165,7 @@ func (ui *dbUI) init() {
 							duit.NewScroll(ui.tableList),
 						),
 					},
-					ui.viewUI,
+					ui.contentUI,
 				),
 			},
 		)

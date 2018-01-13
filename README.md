@@ -11,20 +11,15 @@ MIT-license, see LICENSE.md
 
 # todo
 
-- on invalid credentials (eg bad password/username) while connecting, no error message is shown, but it is still "connecting..."
+- support more databases: mysql, mssql
+- improve showing structure for tables, try to keep it cross-database through information_schema.
+- new setting by duplicating existing one
+
+- fetch rows from resultset on demand. requires updating duit.Gridlist. and/or do paging.
+
 - add buttons to refresh list of database, list of tables/views, data for table/view
-- show difference between table and view
-- show time it is taking to run query
-- allow aborting query
-- show structure of tables (different from self-written queries). find queries for postgres. wrap them in an interface, for easier future other database support.
-- fix todo's, like disconnecting properly
-- fetch rows from resultset on demand. requires updating duit.Gridlist
+- fix todo's
 - search for connections, databases, tables, at bottom of list
 
-- show []byte as hex?
-
-- new setting by duplicating existing one
-- connect via ssh?
-- understand postgis responses, and show geo data (if small enough)
-- support more databases: mysql, mssql
+- find cause of not being able to cancel queries that cause a new db connection to be created
 - colors in UI to indicate which connection you have open

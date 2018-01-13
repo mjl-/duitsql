@@ -202,15 +202,15 @@ func main() {
 	}
 }
 
-func parseRow(row *sql.Row, r interface{}, msg string) error {
+func parseRow(row *sql.Row, r interface{}) error {
 	var buf []byte
 	err := row.Scan(&buf)
 	if err != nil {
-		return fmt.Errorf("%s: scanning json bytes from database: %s", msg, err)
+		return fmt.Errorf("scanning json bytes from database: %s", err)
 	}
 	err = json.Unmarshal(buf, r)
 	if err != nil {
-		return fmt.Errorf("%s: parsing json from database: %s", msg, err)
+		return fmt.Errorf("parsing json from database: %s", err)
 	}
 	return nil
 }

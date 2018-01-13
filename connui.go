@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log"
 	"time"
 
@@ -79,10 +80,10 @@ func newConnUI(cc configConnection) (ui *connUI) {
 
 				q := `select coalesce(json_agg(datname order by datname asc), '[]') from pg_database where not datistemplate`
 				var dbNames []string
-				err = parseRow(db.QueryRowContext(ctx, q), &dbNames, "parsing list of databases")
+				err = parseRow(db.QueryRowContext(ctx, q), &dbNames)
 				defer cancelFunc()
 				if err != nil {
-					setError(err)
+					setError(fmt.Errorf("parsing list of databases: %s", err))
 					db.Close()
 					return
 				}
