@@ -13,7 +13,7 @@ func middle(msg *duit.Label, actions ...duit.UI) duit.UI {
 			Kids: duit.NewKids(
 				&duit.Grid{
 					Columns: 1,
-					Padding: duit.NSpace(1, duit.SpaceXY(4, 2)),
+					Padding: duit.NSpaceXY(1, 4, 2),
 					Halign:  []duit.Halign{duit.HalignMiddle},
 					Kids: duit.NewKids(
 						msg,
