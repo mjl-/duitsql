@@ -32,45 +32,39 @@ func (ui *dbUI) layout() {
 	dui.MarkLayout(nil) // xxx
 }
 
-func (ui *dbUI) error(err error) {
-	defer ui.layout()
-	msg := label("error: " + err.Error())
+func (ui *dbUI) status(msg string) {
 	retry := &duit.Button{
 		Text: "retry",
 		Click: func(e *duit.Event) {
 			go ui.init()
 		},
 	}
-	ui.Box.Kids = duit.NewKids(middle(msg, retry))
+	ui.Box.Kids = duit.NewKids(middle(label(msg), retry))
+	ui.layout()
 }
 
+// called from outside of main context
 func (ui *dbUI) init() {
-	setError := func(err error) {
+	lcheck, handle := errorHandler(func(err error) {
 		dui.Call <- func() {
-			ui.error(err)
+			ui.status(fmt.Sprintf("error: %s", err))
 		}
-	}
+	})
+	defer handle()
 
 	db, err := sql.Open(ui.connUI.cc.Type, ui.connUI.cc.connectionString(ui.dbName))
-	if err != nil {
-		setError(err)
-		return
-	}
+	lcheck(err, "connecting to database")
 
 	ctx, cancelQueryFunc := context.WithTimeout(context.Background(), 15*time.Second)
 	dui.Call <- func() {
-		defer ui.layout()
-		ui.Box.Kids = duit.NewKids(
-			middle(
-				label("listing tables..."),
-				&duit.Button{
-					Text: "cancel",
-					Click: func(e *duit.Event) {
-						cancelQueryFunc()
-					},
-				},
-			),
-		)
+		cancel := &duit.Button{
+			Text: "cancel",
+			Click: func(e *duit.Event) {
+				cancelQueryFunc()
+			},
+		}
+		ui.Box.Kids = duit.NewKids(middle(label("listing tables..."), cancel))
+		ui.layout()
 	}
 
 	var q string
@@ -111,26 +105,16 @@ func (ui *dbUI) init() {
 		Name   string `json:"name"`
 	}
 	var objects []object
-	err = func() error {
-		rows, err := db.QueryContext(ctx, q, args...)
-		if err != nil {
-			return err
-		}
-		defer rows.Close()
-		for rows.Next() {
-			var o object
-			err = rows.Scan(&o.IsView, &o.Name)
-			if err != nil {
-				return err
-			}
-			objects = append(objects, o)
-		}
-		return rows.Err()
-	}()
-	if err != nil {
-		setError(fmt.Errorf("listing tables in database: %s", err))
-		return
+	rows, err := db.QueryContext(ctx, q, args...)
+	lcheck(err, "listing tables and views")
+	defer rows.Close()
+	for rows.Next() {
+		var o object
+		err = rows.Scan(&o.IsView, &o.Name)
+		lcheck(err, "scanning row")
+		objects = append(objects, o)
 	}
+	lcheck(rows.Err(), "reading row")
 
 	eUI := newEditUI(ui)
 	values := make([]*duit.Gridrow, 1+len(objects))

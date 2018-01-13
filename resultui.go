@@ -41,26 +41,12 @@ func (ui *resultUI) status(msg string) {
 }
 
 func (ui *resultUI) load() {
-	var lerr bool
-	defer func() {
-		e := recover()
-		if lerr {
-			return
-		}
-		if e != nil {
-			panic(e)
-		}
-	}()
-	lcheck := func(err error, msg string) {
-		if err == nil {
-			return
-		}
+	lcheck, handle := errorHandler(func(err error) {
 		dui.Call <- func() {
-			ui.status(fmt.Sprintf("error: %s: %s", msg, err))
+			ui.status(fmt.Sprintf("error: %s", err))
 		}
-		lerr = true
-		panic(lerr)
-	}
+	})
+	defer handle()
 
 	status := label("executing query...")
 	ctx, cancelQueryFunc := context.WithCancel(context.Background())

@@ -67,26 +67,12 @@ func (ui *tablestructUI) init() {
 func (ui *tablestructUI) _load(ctx context.Context, cancelQueryFunc func()) {
 	defer cancelQueryFunc()
 
-	var lerr bool
-	defer func() {
-		e := recover()
-		if lerr {
-			return
-		}
-		if e != nil {
-			panic(e)
-		}
-	}()
-	lcheck := func(err error, msg string) {
-		if err == nil {
-			return
-		}
+	lcheck, handle := errorHandler(func(err error) {
 		dui.Call <- func() {
-			ui.status(fmt.Sprintf("error: %s: %s", msg, err))
+			ui.status(fmt.Sprintf("error: %s", err))
 		}
-		lerr = true
-		panic(lerr)
-	}
+	})
+	defer handle()
 
 	var qColumns string
 	var args []interface{}

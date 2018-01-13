@@ -27,8 +27,8 @@ func (ui *connUI) layout() {
 	dui.MarkLayout(ui)
 }
 
-func (ui *connUI) error(err error) {
-	ui.status.Text = "error: " + err.Error()
+func (ui *connUI) error(msg string) {
+	ui.status.Text = msg
 	ui.Box.Kids = duit.NewKids(ui.unconnected)
 	dui.MarkLayout(nil)
 }
@@ -64,7 +64,7 @@ func newConnUI(cc configConnection) (ui *connUI) {
 
 			db, err := sql.Open(cc.Type, cc.connectionString(cc.Database))
 			if err != nil {
-				ui.error(err)
+				ui.error(fmt.Sprintf("error: %s", err))
 				return
 			}
 
@@ -72,34 +72,15 @@ func newConnUI(cc configConnection) (ui *connUI) {
 			ui.cancelConnectFunc = cancelFunc
 
 			go func() {
-				setError := func(err error) {
-					dui.Call <- func() {
-						ui.error(err)
-					}
-				}
-
-				queryNames := func(q string) (l []string, ok bool) {
-					rows, err := db.QueryContext(ctx, q)
-					if err == nil {
-						for rows.Next() && err == nil {
-							var name string
-							err = rows.Scan(&name)
-							l = append(l, name)
-						}
-						if err == nil {
-							err = rows.Err()
-						}
-					}
-					if rows != nil {
-						rows.Close()
-					}
-					if err != nil {
-						setError(fmt.Errorf("fetching list of databases: %s", err))
+				lcheck, handle := errorHandler(func(err error) {
+					if db != nil {
 						db.Close()
-						return nil, false
 					}
-					return l, true
-				}
+					dui.Call <- func() {
+						ui.error(fmt.Sprintf("error: %s", err))
+					}
+				})
+				defer handle()
 
 				var q string
 				switch cc.Type {
@@ -112,10 +93,18 @@ func newConnUI(cc configConnection) (ui *connUI) {
 				case "sqlserver":
 					q = `select name from master.dbo.sysdatabases where name not in ('master', 'tempdb', 'model', 'msdb') order by name asc`
 				}
-				dbNames, ok := queryNames(q)
-				if !ok {
-					return
+
+				var dbNames []string
+				rows, err := db.QueryContext(ctx, q)
+				lcheck(err, "listing databases")
+				defer rows.Close()
+				for rows.Next() {
+					var name string
+					err = rows.Scan(&name)
+					lcheck(err, "scanning row")
+					dbNames = append(dbNames, name)
 				}
+				lcheck(rows.Err(), "reading row")
 
 				dbValues := make([]*duit.ListValue, len(dbNames))
 				var sel *duit.ListValue
