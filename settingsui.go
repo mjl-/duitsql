@@ -12,13 +12,13 @@ type settingsUI struct {
 	duit.Box
 }
 
-func newSettingsUI(cc configConnection, done func()) (ui *settingsUI) {
+func newSettingsUI(cc configConnection, isNew bool, done func()) (ui *settingsUI) {
 	ui = &settingsUI{}
 
 	origName := cc.Name
 
 	port := ""
-	if origName != "" {
+	if cc.Port != 0 {
 		port = fmt.Sprintf("%d", cc.Port)
 	}
 	var primary *duit.Button
@@ -101,32 +101,27 @@ func newSettingsUI(cc configConnection, done func()) (ui *settingsUI) {
 				Password: conn.password.Text,
 				Database: conn.database.Text,
 			}
-			if origName == "" {
-				cUI := newConnUI(cc)
-				lv := &duit.ListValue{
-					Text:     cc.Name,
-					Value:    cUI,
-					Selected: true,
+			l := make([]configConnection, len(topUI.connectionList.Values)-1)
+			for i, lv := range topUI.connectionList.Values[:len(topUI.connectionList.Values)-1] {
+				if lv.Selected {
+					l[i] = cc
+				} else {
+					l[i] = lv.Value.(*connUI).cc
 				}
-				connections.Unselect(nil)
-				connections.Values = append([]*duit.ListValue{lv}, connections.Values...)
-				connectionBox.Kids = duit.NewKids(cUI)
-				dui.MarkDraw(connections)
-				dui.MarkLayout(connectionBox)
-			} else {
-				index := connections.Selected()[0]
-				lv := connections.Values[index]
-				lv.Value.(*connUI).cc = cc
-				lv.Text = cc.Name
 			}
 
-			l := make([]configConnection, len(connections.Values)-1)
-			for i, lv := range connections.Values[:len(connections.Values)-1] {
-				l[i] = lv.Value.(*connUI).cc
-			}
-			go saveConfigConnections(l)
+			go func() {
+				saveConfigConnections(l)
 
-			done()
+				dui.Call <- func() {
+					if origName == "" {
+						topUI.newConnection(cc)
+					} else {
+						topUI.updateConnection(cc)
+					}
+					done()
+				}
+			}()
 		},
 	}
 	check("", &duit.Event{})
@@ -145,30 +140,22 @@ func newSettingsUI(cc configConnection, done func()) (ui *settingsUI) {
 			Text:     "delete",
 			Colorset: &dui.Danger,
 			Click: func(r *duit.Event) {
-				defer dui.MarkLayout(nil)
-
-				sel := connections.Selected()
-				connections.Values[sel[0]].Selected = false
-				connections.Changed(sel[0], &duit.Event{}) // deselects connection
-
-				l := []configConnection{}
-				nvalues := []*duit.ListValue{}
-				for _, lv := range connections.Values {
-					if lv.Value == nil {
-						nvalues = append(nvalues, lv)
-						continue
-					}
-					cc := lv.Value.(*connUI).cc
-					if cc.Name != origName {
-						nvalues = append(nvalues, lv)
-						l = append(l, cc)
-					}
-				}
-				connections.Values = nvalues
-				go saveConfigConnections(l)
+				topUI.deleteSelectedConnection()
 			},
 		}
-		actionBox.Kids = duit.NewKids(primary, cancel, deleteButton)
+		buttons := []duit.UI{primary, cancel, deleteButton}
+		if !isNew {
+			duplicate := &duit.Button{
+				Text: "duplicate",
+				Click: func(e *duit.Event) {
+					ncc := cc
+					ncc.Name = ""
+					topUI.duplicateSettings(ncc)
+				},
+			}
+			buttons = append(buttons, duplicate)
+		}
+		actionBox.Kids = duit.NewKids(buttons...)
 	}
 
 	ui.Box.Kids = duit.NewKids(

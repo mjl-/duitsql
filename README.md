@@ -12,7 +12,6 @@ MIT-license, see LICENSE.md
 # todo
 
 - improve showing structure for tables, try to keep it cross-database through information_schema.  should show check constraints, foreign key constraint, indexes.
-- new setting by duplicating existing one
 
 - fetch rows from resultset on demand. requires updating duit.Gridlist. and/or do paging.
 

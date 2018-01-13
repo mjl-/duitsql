@@ -62,7 +62,7 @@ func newConnUI(cc configConnection) (ui *connUI) {
 			ui.Box.Kids = duit.NewKids(connecting)
 			ui.status.Text = ""
 
-			db, err := sql.Open(cc.Type, cc.connectionString(cc.Database))
+			db, err := sql.Open(ui.cc.Type, ui.cc.connectionString(ui.cc.Database))
 			if err != nil {
 				ui.error(fmt.Sprintf("error: %s", err))
 				return
@@ -83,7 +83,7 @@ func newConnUI(cc configConnection) (ui *connUI) {
 				defer handle()
 
 				var q string
-				switch cc.Type {
+				switch ui.cc.Type {
 				default:
 					panic("bad connection type")
 				case "", "postgres":
@@ -112,7 +112,7 @@ func newConnUI(cc configConnection) (ui *connUI) {
 					lv := &duit.ListValue{
 						Text:     name,
 						Value:    newDBUI(ui, name),
-						Selected: name == cc.Database,
+						Selected: name == ui.cc.Database,
 					}
 					dbValues[i] = lv
 					if lv.Selected {
@@ -126,7 +126,7 @@ func newConnUI(cc configConnection) (ui *connUI) {
 
 					defer ui.layout()
 					ui.db = db
-					disconnect.Disabled = false
+					topUI.disconnect.Disabled = false
 					databaseList.Values = dbValues
 					nui := noDBUI
 					if sel != nil {
@@ -142,9 +142,9 @@ func newConnUI(cc configConnection) (ui *connUI) {
 		Text: "edit",
 		Click: func(r *duit.Event) {
 			defer ui.layout()
-			ui.Box.Kids = duit.NewKids(newSettingsUI(ui.cc, func() {
-				defer ui.layout()
+			ui.Box.Kids = duit.NewKids(newSettingsUI(ui.cc, false, func() {
 				ui.Box.Kids = duit.NewKids(ui.unconnected)
+				ui.layout()
 			}))
 		},
 	}
@@ -173,7 +173,7 @@ func newConnUI(cc configConnection) (ui *connUI) {
 	}
 	databases = &duit.Horizontal{
 		Split: func(width int) []int {
-			if hideLeftBars {
+			if topUI.hideLeftBars {
 				return []int{0, width}
 			}
 			first := dui.Scale(200)

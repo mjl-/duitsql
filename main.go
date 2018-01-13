@@ -3,13 +3,9 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"fmt"
-	"image"
 	"log"
-	"net/url"
 	"os"
 	"path"
-	"strings"
 
 	"9fans.net/go/draw"
 	_ "github.com/denisenkom/go-mssqldb"
@@ -18,81 +14,10 @@ import (
 	"github.com/mjl-/duit"
 )
 
-type configConnection struct {
-	Type     string // postgres, mysql, sqlserver
-	Name     string
-	Host     string
-	Port     int
-	User     string
-	Password string
-	Database string
-	TLS      bool
-}
-
-func (cc configConnection) connectionString(dbName string) string {
-	switch cc.Type {
-	case "postgres":
-		tls := "disable"
-		if cc.TLS {
-			tls = "verify-full"
-		}
-		s := fmt.Sprintf("user=%s password=%s host=%s port=%d sslmode=%s application_name=duitsql", cc.User, cc.Password, cc.Host, cc.Port, tls)
-		if dbName != "" {
-			s += fmt.Sprintf(" dbname=%s", dbName)
-		}
-		return s
-	case "mysql":
-		s := ""
-		if cc.User != "" || cc.Password != "" {
-			s += cc.User
-			if cc.Password != "" {
-				s += ":" + cc.Password
-			}
-			s += "@"
-		}
-		address := cc.Host
-		if cc.Port != 0 {
-			address += fmt.Sprintf(":%d", cc.Port)
-		}
-		s += fmt.Sprintf("tcp(%s)", address)
-		s += "/"
-		if dbName != "" {
-			s += dbName
-		}
-		if cc.TLS {
-			s += "?tls=true"
-		}
-		return s
-	case "sqlserver":
-		host := cc.Host
-		if cc.Port != 0 {
-			host += fmt.Sprintf(":%d", cc.Port)
-		}
-		qs := []string{}
-		if dbName != "" {
-			qs = append(qs, "database="+url.QueryEscape(dbName))
-		}
-		if cc.TLS {
-			qs = append(qs, "encrypt=true", "TrustServerCertificate=false")
-		}
-		u := &url.URL{
-			Scheme:   "sqlserver",
-			User:     url.UserPassword(cc.User, cc.Password),
-			Host:     host,
-			RawQuery: strings.Join(qs, "&"),
-		}
-		return u.String()
-	}
-	panic("missing case")
-}
-
 var (
-	dui           *duit.DUI
-	connections   *duit.List
-	connectionBox *duit.Box
-	disconnect    *duit.Button
-	hideLeftBars  bool // whether to show connections & databases bar. if not, we make them zero width
-	bold          *draw.Font
+	dui   *duit.DUI
+	bold  *draw.Font
+	topUI *mainUI
 )
 
 func check(err error, msg string) {
@@ -160,91 +85,8 @@ func main() {
 		}
 	}
 
-	noConnectionUI := duit.NewMiddle(label("select a connection on the left"))
-	connectionBox = &duit.Box{
-		Kids: duit.NewKids(noConnectionUI),
-	}
-
-	connectionValues := make([]*duit.ListValue, len(configConnections)+1)
-	for i, cc := range configConnections {
-		lv := &duit.ListValue{Text: cc.Name, Value: newConnUI(cc)}
-		connectionValues[i] = lv
-	}
-	connectionValues[len(connectionValues)-1] = &duit.ListValue{Text: "<new>", Value: nil}
-
-	connections = &duit.List{
-		Values: connectionValues,
-		Changed: func(index int, r *duit.Event) {
-			defer dui.MarkLayout(connectionBox)
-			disconnect.Disabled = true
-			lv := connections.Values[index]
-			if !lv.Selected {
-				connectionBox.Kids = duit.NewKids(noConnectionUI)
-				return
-			}
-			if lv.Value == nil {
-				connectionBox.Kids = duit.NewKids(newSettingsUI(configConnection{Type: "postgres"}, func() {}))
-				return
-			}
-			cUI := lv.Value.(*connUI)
-			disconnect.Disabled = cUI.db == nil
-			connectionBox.Kids = duit.NewKids(cUI)
-		},
-	}
-
-	toggleSlim := &duit.Button{
-		Text: "toggle left",
-		Click: func(r *duit.Event) {
-			hideLeftBars = !hideLeftBars
-			dui.MarkLayout(nil)
-		},
-	}
-	disconnect = &duit.Button{
-		Text:     "disconnect",
-		Disabled: true,
-		Click: func(r *duit.Event) {
-			dui.MarkLayout(nil)
-			l := connections.Selected()
-			if len(l) != 1 {
-				return
-			}
-			lv := connections.Values[l[0]]
-			cUI := lv.Value.(*connUI)
-			cUI.disconnect()
-		},
-	}
-	status := &duit.Label{}
-
-	dui.Top.UI = &duit.Box{
-		Kids: duit.NewKids(
-			&duit.Box{
-				Padding: duit.SpaceXY(4, 2),
-				Margin:  image.Pt(4, 0),
-				Kids:    duit.NewKids(toggleSlim, disconnect, status),
-			},
-			&duit.Horizontal{
-				Split: func(width int) []int {
-					if hideLeftBars {
-						return []int{0, width}
-					}
-					first := dui.Scale(125)
-					if first > width/2 {
-						first = width / 2
-					}
-					return []int{first, width - first}
-				},
-				Kids: duit.NewKids(
-					&duit.Box{
-						Kids: duit.NewKids(
-							duit.CenterUI(duit.SpaceXY(4, 2), &duit.Label{Text: "connections", Font: bold}),
-							duit.NewScroll(connections),
-						),
-					},
-					connectionBox,
-				),
-			},
-		),
-	}
+	topUI = newMainUI(configConnections)
+	dui.Top.UI = topUI
 	dui.Render()
 
 	for {
