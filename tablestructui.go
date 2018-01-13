@@ -10,15 +10,25 @@ import (
 )
 
 type tablestructUI struct {
-	dbUI *dbUI
-	name string
+	dbUI      *dbUI
+	name      string
+	scroll    *duit.Scroll
+	scrollBox *duit.Box
 	duit.Box
 }
 
 func newTableStructUI(dbUI *dbUI, name string) *tablestructUI {
+	scrollBox := &duit.Box{}
+	scroll := &duit.Scroll{
+		Kid: duit.Kid{
+			UI: scrollBox,
+		},
+	}
 	return &tablestructUI{
-		dbUI: dbUI,
-		name: name,
+		dbUI:      dbUI,
+		name:      name,
+		scroll:    scroll,
+		scrollBox: scrollBox,
 	}
 }
 
@@ -158,9 +168,9 @@ func (ui *tablestructUI) _load(ctx context.Context, cancelQueryFunc func()) {
 	}
 
 	dui.Call <- func() {
-		ui.Box.Padding = duit.Space{Top: duit.ScrollbarSize, Right: duit.ScrollbarSize, Bottom: 6, Left: duit.ScrollbarSize}
-		ui.Box.Margin = image.Pt(0, 6)
-		ui.Box.Kids = duit.NewKids(
+		ui.scrollBox.Padding = duit.Space{Top: duit.ScrollbarSize, Right: duit.ScrollbarSize, Bottom: 6, Left: duit.ScrollbarSize}
+		ui.scrollBox.Margin = image.Pt(0, 6)
+		ui.scrollBox.Kids = duit.NewKids(
 			&duit.Label{Font: bold, Text: "columns"},
 			&duit.Grid{
 				Columns: 4,
@@ -174,6 +184,7 @@ func (ui *tablestructUI) _load(ctx context.Context, cancelQueryFunc func()) {
 				Kids: duit.NewKids(columnUIs...),
 			},
 		)
+		ui.Box.Kids = duit.NewKids(ui.scroll)
 		ui.layout()
 	}
 }

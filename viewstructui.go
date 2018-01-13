@@ -11,15 +11,31 @@ import (
 )
 
 type viewstructUI struct {
-	dbUI *dbUI
-	name string
+	dbUI      *dbUI
+	name      string
+	vertical  *duit.Vertical
+	scrollBox *duit.Box
 	duit.Box
 }
 
 func newViewStructUI(dbUI *dbUI, name string) *viewstructUI {
+	scrollBox := &duit.Box{}
+	scroll := &duit.Scroll{
+		Kid: duit.Kid{
+			UI: scrollBox,
+		},
+	}
+	vertical := &duit.Vertical{
+		Split: func(height int) []int {
+			return []int{height / 2, height - height/2}
+		},
+		Kids: duit.NewKids(scroll, nil), // nil will be replaced by an Edit
+	}
 	return &viewstructUI{
-		dbUI: dbUI,
-		name: name,
+		dbUI:      dbUI,
+		name:      name,
+		vertical:  vertical,
+		scrollBox: scrollBox,
 	}
 }
 
@@ -164,26 +180,23 @@ func (ui *viewstructUI) _load(ctx context.Context, cancelQueryFunc func()) {
 	edit := duit.NewEdit(bytes.NewReader([]byte(definition.String)))
 
 	dui.Call <- func() {
-		ui.Box.Kids = duit.NewKids(
-			&duit.Box{
-				Padding: duit.Space{Top: duit.ScrollbarSize, Right: duit.ScrollbarSize, Bottom: 6, Left: duit.ScrollbarSize},
-				Margin:  image.Pt(0, 6),
-				Kids: duit.NewKids(
-					&duit.Label{Font: bold, Text: "columns"},
-					&duit.Grid{
-						Columns: 2,
-						Width:   -1,
-						Padding: []duit.Space{
-							duit.Space{Top: 1, Right: 4, Bottom: 1, Left: 0},
-							duit.Space{Top: 1, Right: 0, Bottom: 2, Left: 4},
-						},
-						Kids: duit.NewKids(columnUIs...),
-					},
-					&duit.Label{Font: bold, Text: "definition"},
-				),
+		ui.scrollBox.Padding = duit.Space{Top: duit.ScrollbarSize, Right: duit.ScrollbarSize, Bottom: 6, Left: duit.ScrollbarSize}
+		ui.scrollBox.Margin = image.Pt(0, 6)
+		ui.scrollBox.Kids = duit.NewKids(
+			&duit.Label{Font: bold, Text: "columns"},
+			&duit.Grid{
+				Columns: 2,
+				Width:   -1,
+				Padding: []duit.Space{
+					duit.Space{Top: 1, Right: 4, Bottom: 1, Left: 0},
+					duit.Space{Top: 1, Right: 0, Bottom: 2, Left: 4},
+				},
+				Kids: duit.NewKids(columnUIs...),
 			},
-			edit,
+			&duit.Label{Font: bold, Text: "definition"},
 		)
+		ui.vertical.Kids[1].UI = edit
+		ui.Box.Kids = duit.NewKids(ui.vertical)
 		ui.layout()
 	}
 }
