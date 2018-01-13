@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -257,17 +256,4 @@ func main() {
 			return
 		}
 	}
-}
-
-func parseRow(row *sql.Row, r interface{}) error {
-	var buf []byte
-	err := row.Scan(&buf)
-	if err != nil {
-		return fmt.Errorf("scanning json bytes from database: %s", err)
-	}
-	err = json.Unmarshal(buf, r)
-	if err != nil {
-		return fmt.Errorf("parsing json from database: %s", err)
-	}
-	return nil
 }
