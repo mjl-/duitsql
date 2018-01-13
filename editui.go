@@ -98,7 +98,7 @@ func newEditUI(dbUI *dbUI) (ui *editUI) {
 	resultBox := &duit.Box{
 		Kids: duit.NewKids(
 			duit.NewMiddle(
-				&duit.Label{Text: "type a query and execute selection or query under cursor with cmd + g"},
+				label("type a query and execute selection or query under cursor with cmd + g"),
 			),
 		),
 	}

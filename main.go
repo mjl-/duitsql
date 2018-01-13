@@ -161,7 +161,7 @@ func main() {
 		}
 	}
 
-	noConnectionUI := duit.NewMiddle(&duit.Label{Text: "select a connection on the left"})
+	noConnectionUI := duit.NewMiddle(label("select a connection on the left"))
 	connectionBox = &duit.Box{
 		Kids: duit.NewKids(noConnectionUI),
 	}

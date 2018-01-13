@@ -41,14 +41,13 @@ func (ui *tablestructUI) status(msg string) {
 func (ui *tablestructUI) init() {
 	ctx, cancelQueryFunc := context.WithCancel(context.Background())
 
-	msg := &duit.Label{Text: "executing query..."}
 	cancel := &duit.Button{
 		Text: "cancel",
 		Click: func(e *duit.Event) {
 			cancelQueryFunc()
 		},
 	}
-	ui.Box.Kids = duit.NewKids(middle(msg, cancel))
+	ui.Box.Kids = duit.NewKids(middle(label("executing query..."), cancel))
 	ui.layout()
 
 	go ui._load(ctx, cancelQueryFunc)
@@ -151,10 +150,10 @@ func (ui *tablestructUI) _load(ctx context.Context, cancelQueryFunc func()) {
 			nullable = "NULL"
 		}
 		columnUIs = append(columnUIs,
-			&duit.Label{Text: e.Name.String},
-			&duit.Label{Text: e.Type.String},
-			&duit.Label{Text: e.DefaultValue.String},
-			&duit.Label{Text: nullable},
+			label(e.Name.String),
+			label(e.Type.String),
+			label(e.DefaultValue.String),
+			label(nullable),
 		)
 	}
 

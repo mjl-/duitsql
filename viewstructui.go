@@ -28,14 +28,13 @@ func (ui *viewstructUI) layout() {
 }
 
 func (ui *viewstructUI) status(msg string) {
-	label := &duit.Label{Text: msg}
 	retry := &duit.Button{
 		Text: "retry",
 		Click: func(e *duit.Event) {
 			ui.init()
 		},
 	}
-	ui.Box.Kids = duit.NewKids(middle(label, retry))
+	ui.Box.Kids = duit.NewKids(middle(label(msg), retry))
 	ui.layout()
 }
 
@@ -43,14 +42,13 @@ func (ui *viewstructUI) status(msg string) {
 func (ui *viewstructUI) init() {
 	ctx, cancelQueryFunc := context.WithCancel(context.Background())
 
-	msg := &duit.Label{Text: "executing query..."}
 	cancel := &duit.Button{
 		Text: "cancel",
 		Click: func(e *duit.Event) {
 			cancelQueryFunc()
 		},
 	}
-	ui.Box.Kids = duit.NewKids(middle(msg, cancel))
+	ui.Box.Kids = duit.NewKids(middle(label("executing query..."), cancel))
 	ui.layout()
 
 	go ui._load(ctx, cancelQueryFunc)
@@ -158,8 +156,8 @@ func (ui *viewstructUI) _load(ctx context.Context, cancelQueryFunc func()) {
 	var columnUIs []duit.UI
 	for _, e := range columns {
 		columnUIs = append(columnUIs,
-			&duit.Label{Text: e.Name},
-			&duit.Label{Text: e.Type},
+			label(e.Name),
+			label(e.Type),
 		)
 	}
 

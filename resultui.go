@@ -31,14 +31,13 @@ func (ui *resultUI) layout() {
 
 func (ui *resultUI) status(msg string) {
 	defer ui.layout()
-	label := &duit.Label{Text: msg}
 	retry := &duit.Button{
 		Text: "retry",
 		Click: func(e *duit.Event) {
 			go ui.load()
 		},
 	}
-	ui.Box.Kids = duit.NewKids(middle(label, retry))
+	ui.Box.Kids = duit.NewKids(middle(label(msg), retry))
 }
 
 func (ui *resultUI) load() {
@@ -66,14 +65,13 @@ func (ui *resultUI) load() {
 	ctx, cancelQueryFunc := context.WithCancel(context.Background())
 	defer cancelQueryFunc()
 	dui.Call <- func() {
-		msg := &duit.Label{Text: "executing query..."}
 		cancel := &duit.Button{
 			Text: "cancel",
 			Click: func(e *duit.Event) {
 				cancelQueryFunc()
 			},
 		}
-		ui.Box.Kids = duit.NewKids(middle(msg, cancel))
+		ui.Box.Kids = duit.NewKids(middle(label("executing query..."), cancel))
 		ui.layout()
 	}
 

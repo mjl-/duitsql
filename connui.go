@@ -36,7 +36,7 @@ func (ui *connUI) error(err error) {
 func newConnUI(cc configConnection) (ui *connUI) {
 	var databaseList *duit.List
 
-	var noDBUI duit.UI = duit.NewMiddle(&duit.Label{Text: "select a database on the left"})
+	var noDBUI duit.UI = duit.NewMiddle(label("select a database on the left"))
 
 	var connecting, databases duit.UI
 

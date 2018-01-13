@@ -34,7 +34,7 @@ func (ui *dbUI) layout() {
 
 func (ui *dbUI) error(err error) {
 	defer ui.layout()
-	msg := &duit.Label{Text: "error: " + err.Error()}
+	msg := label("error: " + err.Error())
 	retry := &duit.Button{
 		Text: "retry",
 		Click: func(e *duit.Event) {
@@ -62,7 +62,7 @@ func (ui *dbUI) init() {
 		defer ui.layout()
 		ui.Box.Kids = duit.NewKids(
 			middle(
-				&duit.Label{Text: "listing tables..."},
+				label("listing tables..."),
 				&duit.Button{
 					Text: "cancel",
 					Click: func(e *duit.Event) {
@@ -171,7 +171,7 @@ func (ui *dbUI) init() {
 				lv := ui.tableList.Rows[index]
 				var selUI duit.UI
 				if !lv.Selected {
-					selUI = duit.NewMiddle(&duit.Label{Text: "select <sql>, or a a table or view on the left"})
+					selUI = duit.NewMiddle(label("select <sql>, or a a table or view on the left"))
 				} else {
 					selUI = lv.Value.(duit.UI)
 					switch objUI := selUI.(type) {
