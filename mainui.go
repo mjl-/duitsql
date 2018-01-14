@@ -19,7 +19,7 @@ func newMainUI(configConnections []configConnection) (ui *mainUI) {
 	ui = &mainUI{}
 
 	ui.connectionBox = &duit.Box{}
-	ui.noConnectionUI = duit.NewMiddle(label("select a connection on the left"))
+	ui.noConnectionUI = duit.NewMiddle(duit.SpaceXY(10, 10), label("select a connection on the left"))
 	ui.connectionBox.Kids = duit.NewKids(ui.noConnectionUI)
 
 	connectionValues := make([]*duit.ListValue, len(configConnections)+1)
@@ -78,7 +78,8 @@ func newMainUI(configConnections []configConnection) (ui *mainUI) {
 			Margin:  image.Pt(4, 0),
 			Kids:    duit.NewKids(toggleSlim, ui.disconnect, status),
 		},
-		&duit.Horizontal{
+		&duit.Split{
+			Gutter: 1,
 			Split: func(width int) []int {
 				if ui.hideLeftBars {
 					return []int{0, width}
@@ -100,6 +101,7 @@ func newMainUI(configConnections []configConnection) (ui *mainUI) {
 			),
 		},
 	)
+	ui.Box.Kids[1].ID = "connections"
 	return
 }
 

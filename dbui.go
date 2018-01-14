@@ -155,7 +155,7 @@ func (ui *dbUI) init() {
 				lv := ui.tableList.Rows[index]
 				var selUI duit.UI
 				if !lv.Selected {
-					selUI = duit.NewMiddle(label("select <sql>, or a a table or view on the left"))
+					selUI = duit.NewMiddle(duit.SpaceXY(10, 10), label("select <sql>, or a a table or view on the left"))
 				} else {
 					selUI = lv.Value.(duit.UI)
 					switch objUI := selUI.(type) {
@@ -173,7 +173,8 @@ func (ui *dbUI) init() {
 			Kids: duit.NewKids(eUI),
 		}
 		ui.Box.Kids = duit.NewKids(
-			&duit.Horizontal{
+			&duit.Split{
+				Gutter: 1,
 				Split: func(width int) []int {
 					first := dui.Scale(200)
 					if first > width/2 {
@@ -192,5 +193,6 @@ func (ui *dbUI) init() {
 				),
 			},
 		)
+		ui.Box.Kids[0].ID = "tables"
 	}
 }

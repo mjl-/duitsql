@@ -7,21 +7,16 @@ import (
 )
 
 func middle(msg *duit.Label, actions ...duit.UI) duit.UI {
-	return duit.NewMiddle(
-		&duit.Box{
-			Padding: duit.SpaceXY(10, 10),
+	return duit.NewMiddle(duit.SpaceXY(10, 10),
+		&duit.Grid{
+			Columns: 1,
+			Padding: duit.NSpaceXY(1, 4, 2),
+			Halign:  []duit.Halign{duit.HalignMiddle},
 			Kids: duit.NewKids(
-				&duit.Grid{
-					Columns: 1,
-					Padding: duit.NSpaceXY(1, 4, 2),
-					Halign:  []duit.Halign{duit.HalignMiddle},
-					Kids: duit.NewKids(
-						msg,
-						&duit.Box{
-							Margin: image.Pt(4, 2),
-							Kids:   duit.NewKids(actions...),
-						},
-					),
+				msg,
+				&duit.Box{
+					Margin: image.Pt(4, 2),
+					Kids:   duit.NewKids(actions...),
 				},
 			),
 		},

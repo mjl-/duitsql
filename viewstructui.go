@@ -13,7 +13,7 @@ import (
 type viewstructUI struct {
 	dbUI      *dbUI
 	name      string
-	vertical  *duit.Vertical
+	vertical  *duit.Split
 	scrollBox *duit.Box
 	duit.Box
 }
@@ -25,7 +25,9 @@ func newViewStructUI(dbUI *dbUI, name string) *viewstructUI {
 			UI: scrollBox,
 		},
 	}
-	vertical := &duit.Vertical{
+	vertical := &duit.Split{
+		Vertical: true,
+		Gutter:   1,
 		Split: func(height int) []int {
 			return []int{height / 2, height - height/2}
 		},
@@ -183,6 +185,7 @@ func (ui *viewstructUI) _load(ctx context.Context, cancelQueryFunc func()) {
 		)
 		ui.vertical.Kids[1].UI = edit
 		ui.Box.Kids = duit.NewKids(ui.vertical)
+		ui.Box.Kids[0].ID = "viewstruct"
 		ui.layout()
 	}
 }

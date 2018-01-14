@@ -160,6 +160,7 @@ func newSettingsUI(cc configConnection, isNew bool, done func()) (ui *settingsUI
 
 	ui.Box.Kids = duit.NewKids(
 		duit.NewMiddle(
+			duit.SpaceXY(10, 10),
 			&duit.Box{
 				MaxWidth: 350,
 				Kids: duit.NewKids(

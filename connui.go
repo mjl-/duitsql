@@ -36,7 +36,7 @@ func (ui *connUI) error(msg string) {
 func newConnUI(cc configConnection) (ui *connUI) {
 	var databaseList *duit.List
 
-	var noDBUI duit.UI = duit.NewMiddle(label("select a database on the left"))
+	var noDBUI duit.UI = duit.NewMiddle(duit.SpaceXY(10, 10), label("select a database on the left"))
 
 	var connecting, databases duit.UI
 
@@ -133,6 +133,7 @@ func newConnUI(cc configConnection) (ui *connUI) {
 						nui = sel.Value.(*dbUI)
 					}
 					ui.Box.Kids = duit.NewKids(databases)
+					ui.Box.Kids[0].ID = "databases"
 					ui.databaseBox.Kids = duit.NewKids(nui)
 				}
 			}()
@@ -171,7 +172,8 @@ func newConnUI(cc configConnection) (ui *connUI) {
 	ui.databaseBox = &duit.Box{
 		Kids: duit.NewKids(noDBUI),
 	}
-	databases = &duit.Horizontal{
+	databases = &duit.Split{
+		Gutter: 1,
 		Split: func(width int) []int {
 			if topUI.hideLeftBars {
 				return []int{0, width}

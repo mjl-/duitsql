@@ -20,7 +20,7 @@ type editUI struct {
 	edit      *duit.Edit
 	resultBox *duit.Box
 
-	duit.Vertical
+	duit.Box
 }
 
 func (ui *editUI) layout() {
@@ -98,6 +98,7 @@ func newEditUI(dbUI *dbUI) (ui *editUI) {
 	resultBox := &duit.Box{
 		Kids: duit.NewKids(
 			duit.NewMiddle(
+				duit.SpaceXY(10, 10),
 				label("type a query and execute selection or query under cursor with cmd + g"),
 			),
 		),
@@ -107,13 +108,20 @@ func newEditUI(dbUI *dbUI) (ui *editUI) {
 		sqlPath:   sqlPath,
 		edit:      edit,
 		resultBox: resultBox,
-		Vertical: duit.Vertical{
-			Split: func(height int) []int {
-				half := height / 2
-				return []int{half, height - half}
-			},
-			Kids: duit.NewKids(edit, resultBox),
+		Box: duit.Box{
+			Kids: duit.NewKids(
+				&duit.Split{
+					Vertical: true,
+					Gutter:   1,
+					Split: func(height int) []int {
+						half := height / 2
+						return []int{half, height - half}
+					},
+					Kids: duit.NewKids(edit, resultBox),
+				},
+			),
 		},
 	}
+	ui.Box.Kids[0].ID = "edit"
 	return
 }
