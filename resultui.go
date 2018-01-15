@@ -33,8 +33,9 @@ func (ui *resultUI) status(msg string) {
 	defer ui.layout()
 	retry := &duit.Button{
 		Text: "retry",
-		Click: func(e *duit.Event) {
+		Click: func() (e duit.Event) {
 			go ui.load()
+			return
 		},
 	}
 	ui.Box.Kids = duit.NewKids(middle(label(msg), retry))
@@ -54,8 +55,9 @@ func (ui *resultUI) load() {
 	dui.Call <- func() {
 		cancel := &duit.Button{
 			Text: "cancel",
-			Click: func(e *duit.Event) {
+			Click: func() (e duit.Event) {
 				cancelQueryFunc()
+				return
 			},
 		}
 		ui.Box.Kids = duit.NewKids(middle(status, cancel))
@@ -140,7 +142,7 @@ func (ui *resultUI) load() {
 		}
 
 		ui.grid = &duit.Gridlist{
-			Header:   duit.Gridrow{Values: colNames},
+			Header:   &duit.Gridrow{Values: colNames},
 			Rows:     gridRows,
 			Halign:   halign,
 			Multiple: true,

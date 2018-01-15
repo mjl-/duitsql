@@ -35,8 +35,9 @@ func (ui *dbUI) layout() {
 func (ui *dbUI) status(msg string) {
 	retry := &duit.Button{
 		Text: "retry",
-		Click: func(e *duit.Event) {
+		Click: func() (e duit.Event) {
 			go ui.init()
+			return
 		},
 	}
 	ui.Box.Kids = duit.NewKids(middle(label(msg), retry))
@@ -59,8 +60,9 @@ func (ui *dbUI) init() {
 	dui.Call <- func() {
 		cancel := &duit.Button{
 			Text: "cancel",
-			Click: func(e *duit.Event) {
+			Click: func() (e duit.Event) {
 				cancelQueryFunc()
+				return
 			},
 		}
 		ui.Box.Kids = duit.NewKids(middle(label("listing tables..."), cancel))
@@ -146,11 +148,9 @@ func (ui *dbUI) init() {
 		defer ui.layout()
 		ui.db = db
 		ui.tableList = &duit.Gridlist{
-			Header: duit.Gridrow{
-				Values: []string{"", ""},
-			},
-			Rows: values,
-			Changed: func(index int, r *duit.Event) {
+			Halign: []duit.Halign{duit.HalignMiddle, duit.HalignLeft},
+			Rows:   values,
+			Changed: func(index int) (e duit.Event) {
 				defer ui.layout()
 				lv := ui.tableList.Rows[index]
 				var selUI duit.UI
@@ -167,6 +167,7 @@ func (ui *dbUI) init() {
 					}
 				}
 				ui.contentUI.Kids = duit.NewKids(selUI)
+				return
 			},
 		}
 		ui.contentUI = &duit.Box{

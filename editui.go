@@ -40,7 +40,7 @@ func newEditUI(dbUI *dbUI) (ui *editUI) {
 		}
 		sqlF.Close()
 	}
-	edit.Keys = func(k rune, m draw.Mouse, r *duit.Event) {
+	edit.Keys = func(k rune, m draw.Mouse) (e duit.Event) {
 		switch k {
 		case draw.KeyCmd + 'g':
 			log.Printf("executing command\n")
@@ -93,7 +93,8 @@ func newEditUI(dbUI *dbUI) (ui *editUI) {
 		default:
 			return
 		}
-		r.Consumed = true
+		e.Consumed = true
+		return
 	}
 	resultBox := &duit.Box{
 		Kids: duit.NewKids(

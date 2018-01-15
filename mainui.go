@@ -31,7 +31,7 @@ func newMainUI(configConnections []configConnection) (ui *mainUI) {
 
 	ui.connectionList = &duit.List{
 		Values: connectionValues,
-		Changed: func(index int, r *duit.Event) {
+		Changed: func(index int) (e duit.Event) {
 			defer dui.MarkLayout(ui.connectionBox)
 			ui.disconnect.Disabled = true
 			lv := ui.connectionList.Values[index]
@@ -46,20 +46,22 @@ func newMainUI(configConnections []configConnection) (ui *mainUI) {
 			cUI := lv.Value.(*connUI)
 			ui.disconnect.Disabled = cUI.db == nil
 			ui.connectionBox.Kids = duit.NewKids(cUI)
+			return
 		},
 	}
 
 	toggleSlim := &duit.Button{
 		Text: "toggle left",
-		Click: func(r *duit.Event) {
+		Click: func() (e duit.Event) {
 			ui.hideLeftBars = !ui.hideLeftBars
 			dui.MarkLayout(nil)
+			return
 		},
 	}
 	ui.disconnect = &duit.Button{
 		Text:     "disconnect",
 		Disabled: true,
-		Click: func(r *duit.Event) {
+		Click: func() (e duit.Event) {
 			dui.MarkLayout(nil)
 			l := ui.connectionList.Selected()
 			if len(l) != 1 {
@@ -68,6 +70,7 @@ func newMainUI(configConnections []configConnection) (ui *mainUI) {
 			lv := ui.connectionList.Values[l[0]]
 			cUI := lv.Value.(*connUI)
 			cUI.disconnect()
+			return
 		},
 	}
 	status := &duit.Label{}

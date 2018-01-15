@@ -39,8 +39,9 @@ func (ui *tablestructUI) layout() {
 func (ui *tablestructUI) status(msg string) {
 	retry := &duit.Button{
 		Text: "retry",
-		Click: func(e *duit.Event) {
+		Click: func() (e duit.Event) {
 			ui.init()
+			return
 		},
 	}
 	ui.Box.Kids = duit.NewKids(middle(label(msg), retry))
@@ -53,8 +54,9 @@ func (ui *tablestructUI) init() {
 
 	cancel := &duit.Button{
 		Text: "cancel",
-		Click: func(e *duit.Event) {
+		Click: func() (e duit.Event) {
 			cancelQueryFunc()
+			return
 		},
 	}
 	ui.Box.Kids = duit.NewKids(middle(label("executing query..."), cancel))

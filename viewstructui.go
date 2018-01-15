@@ -48,8 +48,9 @@ func (ui *viewstructUI) layout() {
 func (ui *viewstructUI) status(msg string) {
 	retry := &duit.Button{
 		Text: "retry",
-		Click: func(e *duit.Event) {
+		Click: func() (e duit.Event) {
 			ui.init()
+			return
 		},
 	}
 	ui.Box.Kids = duit.NewKids(middle(label(msg), retry))
@@ -62,8 +63,9 @@ func (ui *viewstructUI) init() {
 
 	cancel := &duit.Button{
 		Text: "cancel",
-		Click: func(e *duit.Event) {
+		Click: func() (e duit.Event) {
 			cancelQueryFunc()
+			return
 		},
 	}
 	ui.Box.Kids = duit.NewKids(middle(label("executing query..."), cancel))

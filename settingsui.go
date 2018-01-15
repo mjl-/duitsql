@@ -67,12 +67,13 @@ func newSettingsUI(cc configConnection, isNew bool, done func()) (ui *settingsUI
 		v, err := strconv.ParseInt(s, 10, 32)
 		return err == nil && v > 0 && v < 64*1024
 	}
-	check := func(_ string, r *duit.Event) {
+	check := func(_ string) (e duit.Event) {
 		o := primary.Disabled
 		primary.Disabled = conn.name.Text == "" || conn.host.Text == "" || (conn.port.Text != "" && !validPort(conn.port.Text))
 		if o != primary.Disabled {
 			dui.MarkDraw(primary)
 		}
+		return
 	}
 	conn.name.Changed = check
 	conn.host.Changed = check
@@ -87,7 +88,7 @@ func newSettingsUI(cc configConnection, isNew bool, done func()) (ui *settingsUI
 	primary = &duit.Button{
 		Text:     action,
 		Colorset: &dui.Primary,
-		Click: func(r *duit.Event) {
+		Click: func() (e duit.Event) {
 			port := int64(0)
 			if conn.port.Text != "" {
 				port, _ = strconv.ParseInt(conn.port.Text, 10, 16)
@@ -122,9 +123,10 @@ func newSettingsUI(cc configConnection, isNew bool, done func()) (ui *settingsUI
 					done()
 				}
 			}()
+			return
 		},
 	}
-	check("", &duit.Event{})
+	check("")
 	actionBox := &duit.Box{
 		Margin: image.Pt(6, 0),
 		Kids:   duit.NewKids(primary),
@@ -132,25 +134,28 @@ func newSettingsUI(cc configConnection, isNew bool, done func()) (ui *settingsUI
 	if origName != "" {
 		cancel := &duit.Button{
 			Text: "cancel",
-			Click: func(r *duit.Event) {
+			Click: func() (e duit.Event) {
 				done()
+				return
 			},
 		}
 		deleteButton := &duit.Button{
 			Text:     "delete",
 			Colorset: &dui.Danger,
-			Click: func(r *duit.Event) {
+			Click: func() (e duit.Event) {
 				topUI.deleteSelectedConnection()
+				return
 			},
 		}
 		buttons := []duit.UI{primary, cancel, deleteButton}
 		if !isNew {
 			duplicate := &duit.Button{
 				Text: "duplicate",
-				Click: func(e *duit.Event) {
+				Click: func() (e duit.Event) {
 					ncc := cc
 					ncc.Name = ""
 					topUI.duplicateSettings(ncc)
+					return
 				},
 			}
 			buttons = append(buttons, duplicate)
@@ -187,22 +192,25 @@ func newSettingsUI(cc configConnection, isNew bool, done func()) (ui *settingsUI
 									conn.typePostgres,
 									&duit.Label{
 										Text: "postgres",
-										Click: func(e *duit.Event) {
+										Click: func() (e duit.Event) {
 											conn.typePostgres.Select(dui)
+											return
 										},
 									},
 									conn.typeMysql,
 									&duit.Label{
 										Text: "mysql",
-										Click: func(e *duit.Event) {
+										Click: func() (e duit.Event) {
 											conn.typeMysql.Select(dui)
+											return
 										},
 									},
 									conn.typeSqlserver,
 									&duit.Label{
 										Text: "sqlserver",
-										Click: func(e *duit.Event) {
+										Click: func() (e duit.Event) {
 											conn.typeSqlserver.Select(dui)
+											return
 										},
 									},
 								),

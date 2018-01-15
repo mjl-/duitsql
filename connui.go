@@ -42,7 +42,7 @@ func newConnUI(cc configConnection) (ui *connUI) {
 
 	cancel := &duit.Button{
 		Text: "cancel",
-		Click: func(r *duit.Event) {
+		Click: func() (e duit.Event) {
 			if ui.cancelConnectFunc != nil {
 				ui.cancelConnectFunc()
 				ui.cancelConnectFunc = nil
@@ -50,6 +50,7 @@ func newConnUI(cc configConnection) (ui *connUI) {
 				// xxx it seems lib/pq doesn't cancel queries when it's causing a connect to an (unreachable) server
 				log.Printf("already canceled...\n")
 			}
+			return
 		},
 	}
 
@@ -57,7 +58,7 @@ func newConnUI(cc configConnection) (ui *connUI) {
 	connect := &duit.Button{
 		Text:     "connect",
 		Colorset: &dui.Primary,
-		Click: func(result *duit.Event) {
+		Click: func() (e duit.Event) {
 			defer ui.layout()
 			ui.Box.Kids = duit.NewKids(connecting)
 			ui.status.Text = ""
@@ -137,23 +138,25 @@ func newConnUI(cc configConnection) (ui *connUI) {
 					ui.databaseBox.Kids = duit.NewKids(nui)
 				}
 			}()
+			return
 		},
 	}
 	edit := &duit.Button{
 		Text: "edit",
-		Click: func(r *duit.Event) {
+		Click: func() (e duit.Event) {
 			defer ui.layout()
 			ui.Box.Kids = duit.NewKids(newSettingsUI(ui.cc, false, func() {
 				ui.Box.Kids = duit.NewKids(ui.unconnected)
 				ui.layout()
 			}))
+			return
 		},
 	}
 	ui.status = &duit.Label{}
 	ui.unconnected = middle(ui.status, connect, edit)
 	connecting = middle(label("connecting..."), cancel)
 	databaseList = &duit.List{
-		Changed: func(index int, result *duit.Event) {
+		Changed: func(index int) (e duit.Event) {
 			lv := databaseList.Values[index]
 			nui := noDBUI
 			shouldConnect := false
@@ -167,6 +170,7 @@ func newConnUI(cc configConnection) (ui *connUI) {
 			if shouldConnect {
 				go lv.Value.(*dbUI).init()
 			}
+			return
 		},
 	}
 	ui.databaseBox = &duit.Box{
