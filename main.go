@@ -58,7 +58,7 @@ func main() {
 	}
 
 	var err error
-	dui, err = duit.NewDUI("sql", "1000x600")
+	dui, err = duit.NewDUI("sql", nil)
 	check(err, "new dui")
 
 	bold = dui.Display.DefaultFont
