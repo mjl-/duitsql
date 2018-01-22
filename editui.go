@@ -47,7 +47,7 @@ func newEditUI(dbUI *dbUI) (ui *editUI) {
 			query := ui.edit.Selection()
 			if query == "" {
 				// read query under cursor. by moving backward and forward until we find eof or ;
-				c := ui.edit.Cursor()
+				c, _ := ui.edit.Cursor()
 				skip := func(r duit.EditReader) {
 					for {
 						c, eof := r.Peek()
