@@ -148,7 +148,7 @@ func (ui *dbUI) init() {
 		defer ui.layout()
 		ui.db = db
 		ui.tableList = &duit.Gridlist{
-			Fit: duit.FitSlim,
+			Fit:    duit.FitSlim,
 			Halign: []duit.Halign{duit.HalignMiddle, duit.HalignLeft},
 			Rows:   values,
 			Changed: func(index int) (e duit.Event) {

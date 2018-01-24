@@ -4,11 +4,11 @@ import (
 	"fmt"
 )
 
-type localError struct {
-	err error
-}
-
 func errorHandler(fn func(xerr error)) (func(error, string), func()) {
+	type localError struct {
+		err error
+	}
+
 	check := func(err error, msg string) {
 		if err != nil {
 			panic(&localError{fmt.Errorf("%s: %s", msg, err)})
