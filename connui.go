@@ -177,7 +177,8 @@ func newConnUI(cc configConnection) (ui *connUI) {
 		Kids: duit.NewKids(noDBUI),
 	}
 	databases = &duit.Split{
-		Gutter: 1,
+		Gutter:     1,
+		Background: dui.Gutter,
 		Split: func(width int) []int {
 			if topUI.hideLeftBars {
 				return []int{0, width}

@@ -112,8 +112,9 @@ func newEditUI(dbUI *dbUI) (ui *editUI) {
 		Box: duit.Box{
 			Kids: duit.NewKids(
 				&duit.Split{
-					Vertical: true,
-					Gutter:   1,
+					Vertical:   true,
+					Gutter:     1,
+					Background: dui.Gutter,
 					Split: func(height int) []int {
 						half := height / 2
 						return []int{half, height - half}

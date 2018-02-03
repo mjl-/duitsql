@@ -26,8 +26,9 @@ func newViewStructUI(dbUI *dbUI, name string) *viewstructUI {
 		},
 	}
 	vertical := &duit.Split{
-		Vertical: true,
-		Gutter:   1,
+		Vertical:   true,
+		Gutter:     1,
+		Background: dui.Gutter,
 		Split: func(height int) []int {
 			return []int{height / 2, height - height/2}
 		},

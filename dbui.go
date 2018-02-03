@@ -176,7 +176,8 @@ func (ui *dbUI) init() {
 		}
 		ui.Box.Kids = duit.NewKids(
 			&duit.Split{
-				Gutter: 1,
+				Gutter:     1,
+				Background: dui.Gutter,
 				Split: func(width int) []int {
 					first := dui.Scale(200)
 					if first > width/2 {

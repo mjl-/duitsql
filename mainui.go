@@ -82,7 +82,8 @@ func newMainUI(configConnections []configConnection) (ui *mainUI) {
 			Kids:    duit.NewKids(toggleSlim, ui.disconnect, status),
 		},
 		&duit.Split{
-			Gutter: 1,
+			Gutter:     1,
+			Background: dui.Gutter,
 			Split: func(width int) []int {
 				if ui.hideLeftBars {
 					return []int{0, width}
