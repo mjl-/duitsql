@@ -36,7 +36,7 @@ func newEditUI(dbUI *dbUI) (ui *editUI) {
 	if err == nil {
 		buf, err := ioutil.ReadAll(sqlF)
 		if err == nil {
-			edit = duit.NewEdit(bytes.NewReader(buf))
+			edit, _ = duit.NewEdit(bytes.NewReader(buf))
 		}
 		sqlF.Close()
 	}
@@ -44,8 +44,12 @@ func newEditUI(dbUI *dbUI) (ui *editUI) {
 		switch k {
 		case draw.KeyCmd + 'g':
 			log.Printf("executing command\n")
-			query := ui.edit.Selection()
-			if query == "" {
+			query, err := ui.edit.Selection()
+			if err != nil {
+				log.Printf("selection: %s\n", err)
+				return
+			}
+			if len(query) == 0 {
 				// read query under cursor. by moving backward and forward until we find eof or ;
 				c := ui.edit.Cursor()
 				skip := func(r duit.EditReader) {
@@ -67,11 +71,12 @@ func newEditUI(dbUI *dbUI) (ui *editUI) {
 					log.Printf("error reading from edit: %s\n", err)
 					return
 				}
-				query = string(buf)
+				query = buf
 			}
-			log.Printf("query is %q\n", query)
+			q := string(query)
+			log.Printf("query is %q\n", q)
 			defer ui.layout()
-			tabUI := newResultUI(ui.dbUI, query)
+			tabUI := newResultUI(ui.dbUI, q)
 			ui.resultBox.Kids = duit.NewKids(tabUI)
 			go tabUI.load()
 

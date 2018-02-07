@@ -168,7 +168,7 @@ func (ui *viewstructUI) _load(ctx context.Context, cancelQueryFunc func()) {
 		)
 	}
 
-	edit := duit.NewEdit(bytes.NewReader([]byte(definition.String)))
+	edit, _ := duit.NewEdit(bytes.NewReader([]byte(definition.String)))
 
 	dui.Call <- func() {
 		ui.scrollBox.Padding = duit.Space{Top: duit.ScrollbarSize, Right: duit.ScrollbarSize, Bottom: 6, Left: duit.ScrollbarSize}
