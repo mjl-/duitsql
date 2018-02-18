@@ -1,3 +1,4 @@
+// SQL database browser and query executor, created with duit.
 package main
 
 import (
@@ -62,8 +63,8 @@ func main() {
 	check(err, "new dui")
 
 	bold = dui.Display.DefaultFont
-	if os.Getenv("boldfont") != "" {
-		bold, err = dui.Display.OpenFont(os.Getenv("boldfont"))
+	if os.Getenv("fontbold") != "" {
+		bold, err = dui.Display.OpenFont(os.Getenv("fontbold"))
 		check(err, "open bold font")
 	}
 
