@@ -32,22 +32,28 @@ func newMainUI(configConnections []configConnection) (ui *mainUI) {
 	ui.connectionList = &duit.List{
 		Values: connectionValues,
 		Changed: func(index int) (e duit.Event) {
-			defer dui.MarkLayout(ui.connectionBox)
 			ui.disconnect.Disabled = true
 			dui.MarkDraw(ui.disconnect)
 			lv := ui.connectionList.Values[index]
 			if !lv.Selected {
 				ui.connectionBox.Kids = duit.NewKids(ui.noConnectionUI)
+				dui.MarkLayout(ui)
 				return
 			}
 			if lv.Value == nil {
 				nop := func() {}
 				ui.connectionBox.Kids = duit.NewKids(newSettingsUI(configConnection{Type: "postgres"}, true, nop))
+				dui.MarkLayout(ui)
 				return
 			}
 			cUI := lv.Value.(*connUI)
 			ui.disconnect.Disabled = cUI.db == nil
 			ui.connectionBox.Kids = duit.NewKids(cUI)
+			dui.MarkLayout(ui)
+			if cUI.db == nil {
+				dui.Render()
+				dui.Focus(cUI.connect)
+			}
 			return
 		},
 	}

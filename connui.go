@@ -18,6 +18,7 @@ type connUI struct {
 	cancelConnectFunc context.CancelFunc
 
 	unconnected duit.UI
+	connect     *duit.Button
 	status      *duit.Label
 
 	duit.Box
@@ -55,7 +56,7 @@ func newConnUI(cc configConnection) (ui *connUI) {
 	}
 
 	ui = &connUI{cc: cc}
-	connect := &duit.Button{
+	ui.connect = &duit.Button{
 		Text:     "connect",
 		Colorset: &dui.Primary,
 		Click: func() (e duit.Event) {
@@ -153,7 +154,7 @@ func newConnUI(cc configConnection) (ui *connUI) {
 		},
 	}
 	ui.status = &duit.Label{}
-	ui.unconnected = middle(ui.status, connect, edit)
+	ui.unconnected = middle(ui.status, ui.connect, edit)
 	connecting = middle(label("connecting..."), cancel)
 	databaseList = &duit.List{
 		Changed: func(index int) (e duit.Event) {
@@ -166,9 +167,12 @@ func newConnUI(cc configConnection) (ui *connUI) {
 				shouldConnect = dbUI.db == nil
 			}
 			ui.databaseBox.Kids = duit.NewKids(nui)
-			dui.MarkLayout(ui.databaseBox)
+			dui.MarkLayout(ui)
 			if shouldConnect {
 				go lv.Value.(*dbUI).init()
+			} else {
+				dui.Render()
+				dui.Focus(lv.Value.(*dbUI).tableList)
 			}
 			return
 		},
