@@ -34,13 +34,15 @@ func newMainUI(configConnections []configConnection) (ui *mainUI) {
 		Changed: func(index int) (e duit.Event) {
 			defer dui.MarkLayout(ui.connectionBox)
 			ui.disconnect.Disabled = true
+			dui.MarkDraw(ui.disconnect)
 			lv := ui.connectionList.Values[index]
 			if !lv.Selected {
 				ui.connectionBox.Kids = duit.NewKids(ui.noConnectionUI)
 				return
 			}
 			if lv.Value == nil {
-				ui.connectionBox.Kids = duit.NewKids(newSettingsUI(configConnection{Type: "postgres"}, true, func() {}))
+				nop := func() {}
+				ui.connectionBox.Kids = duit.NewKids(newSettingsUI(configConnection{Type: "postgres"}, true, nop))
 				return
 			}
 			cUI := lv.Value.(*connUI)
