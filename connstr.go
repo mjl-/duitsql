@@ -57,9 +57,11 @@ func (c connectionConfig) connectionString(dbName string) string {
 			s += "@"
 		}
 		address := c.Host
-		if c.Port != 0 {
-			address += fmt.Sprintf(":%d", c.Port)
+		port := c.Port
+		if port == 0 {
+			port = 3306
 		}
+		address += fmt.Sprintf(":%d", port)
 		s += fmt.Sprintf("tcp(%s)", address)
 		s += "/"
 		if dbName != "" {
