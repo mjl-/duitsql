@@ -78,7 +78,7 @@ func (ui *tablestructUI) _load(ctx context.Context, cancelQueryFunc func()) {
 
 	var qColumns string
 	var args []interface{}
-	switch ui.dbUI.connUI.cc.Type {
+	switch ui.dbUI.connUI.config.Type {
 	case "postgres":
 		qColumns = `
 			select

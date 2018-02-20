@@ -11,7 +11,7 @@ import (
 )
 
 type connUI struct {
-	cc          configConnection
+	config      connectionConfig
 	db          *sql.DB
 	databaseBox *duit.Box // for the selected database, after connecting
 
@@ -34,7 +34,7 @@ func (ui *connUI) error(msg string) {
 	dui.MarkLayout(nil)
 }
 
-func newConnUI(cc configConnection) (ui *connUI) {
+func newConnUI(config connectionConfig) (ui *connUI) {
 	var databaseList *duit.List
 
 	noDBUI := middle(label("select a database on the left"))
@@ -55,7 +55,7 @@ func newConnUI(cc configConnection) (ui *connUI) {
 		},
 	}
 
-	ui = &connUI{cc: cc}
+	ui = &connUI{config: config}
 	ui.connect = &duit.Button{
 		Text:     "connect",
 		Colorset: &dui.Primary,
@@ -64,7 +64,7 @@ func newConnUI(cc configConnection) (ui *connUI) {
 			ui.Box.Kids = duit.NewKids(connecting)
 			ui.status.Text = ""
 
-			db, err := sql.Open(ui.cc.Type, ui.cc.connectionString(ui.cc.Database))
+			db, err := sql.Open(ui.config.Type, ui.config.connectionString(ui.config.Database))
 			if err != nil {
 				ui.error(fmt.Sprintf("error: %s", err))
 				return
@@ -85,7 +85,7 @@ func newConnUI(cc configConnection) (ui *connUI) {
 				defer handle()
 
 				var q string
-				switch ui.cc.Type {
+				switch ui.config.Type {
 				default:
 					panic("bad connection type")
 				case "", "postgres":
@@ -114,7 +114,7 @@ func newConnUI(cc configConnection) (ui *connUI) {
 					lv := &duit.ListValue{
 						Text:     name,
 						Value:    newDBUI(ui, name),
-						Selected: name == ui.cc.Database,
+						Selected: name == ui.config.Database,
 					}
 					dbValues[i] = lv
 					if lv.Selected {
@@ -146,7 +146,7 @@ func newConnUI(cc configConnection) (ui *connUI) {
 		Text: "edit",
 		Click: func() (e duit.Event) {
 			defer ui.layout()
-			ui.Box.Kids = duit.NewKids(newSettingsUI(ui.cc, false, func() {
+			ui.Box.Kids = duit.NewKids(newSettingsUI(ui.config, false, func() {
 				ui.Box.Kids = duit.NewKids(ui.unconnected)
 				ui.layout()
 			}))

@@ -88,7 +88,7 @@ func (ui *viewstructUI) _load(ctx context.Context, cancelQueryFunc func()) {
 
 	var qDefinition, qColumns string
 	var args []interface{}
-	switch ui.dbUI.connUI.cc.Type {
+	switch ui.dbUI.connUI.config.Type {
 	case "postgres":
 		qDefinition = `
 			select view_definition

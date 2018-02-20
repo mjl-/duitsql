@@ -17,18 +17,18 @@ type mainUI struct {
 	duit.Box
 }
 
-func newMainUI(configConnections []configConnection) (ui *mainUI) {
+func newMainUI(configs []connectionConfig) (ui *mainUI) {
 	ui = &mainUI{}
 
 	ui.connectionBox = &duit.Box{}
 	ui.noConnectionUI = middle(label("select a connection on the left"))
 	ui.connectionBox.Kids = duit.NewKids(ui.noConnectionUI)
 
-	connectionValues := make([]*duit.ListValue, len(configConnections)+1)
-	for i, cc := range configConnections {
+	connectionValues := make([]*duit.ListValue, len(configs)+1)
+	for i, c := range configs {
 		lv := &duit.ListValue{
-			Text:  cc.Name,
-			Value: newConnUI(cc),
+			Text:  c.Name,
+			Value: newConnUI(c),
 		}
 		connectionValues[i] = lv
 	}
@@ -50,7 +50,7 @@ func newMainUI(configConnections []configConnection) (ui *mainUI) {
 			}
 			if lv.Value == nil {
 				nop := func() {}
-				ui.connectionBox.Kids = duit.NewKids(newSettingsUI(configConnection{Type: "postgres"}, true, nop))
+				ui.connectionBox.Kids = duit.NewKids(newSettingsUI(connectionConfig{Type: "postgres"}, true, nop))
 				dui.MarkLayout(ui)
 				return
 			}
@@ -131,12 +131,12 @@ func (ui *mainUI) layout() {
 }
 
 // essentially opens the "new settings" ui, but with the given config filled in.
-func (ui *mainUI) duplicateSettings(cc configConnection) {
+func (ui *mainUI) duplicateSettings(c connectionConfig) {
 	for _, lv := range ui.connectionList.Values {
 		if lv.Value == nil {
 			lv.Selected = true
 			nop := func() {}
-			ui.connectionBox.Kids = duit.NewKids(newSettingsUI(cc, true, nop))
+			ui.connectionBox.Kids = duit.NewKids(newSettingsUI(c, true, nop))
 		} else {
 			lv.Selected = false
 		}
@@ -159,10 +159,10 @@ func (ui *mainUI) sortConnections() {
 
 // adds config as new connection to connectionList.
 // Called from main loop.
-func (ui *mainUI) addNewConnection(cc configConnection) {
-	cUI := newConnUI(cc)
+func (ui *mainUI) addNewConnection(c connectionConfig) {
+	cUI := newConnUI(c)
 	lv := &duit.ListValue{
-		Text:     cc.Name,
+		Text:     c.Name,
 		Value:    cUI,
 		Selected: true,
 	}
@@ -175,11 +175,11 @@ func (ui *mainUI) addNewConnection(cc configConnection) {
 
 // updates the selected connection with the new config.
 // called from main loop
-func (ui *mainUI) updateSelectedConnection(cc configConnection) {
+func (ui *mainUI) updateSelectedConnection(c connectionConfig) {
 	index := ui.connectionList.Selected()[0]
 	lv := ui.connectionList.Values[index]
-	lv.Value.(*connUI).cc = cc
-	lv.Text = cc.Name
+	lv.Value.(*connUI).config = c
+	lv.Text = c.Name
 	ui.sortConnections()
 	dui.MarkDraw(ui.connectionList)
 }
@@ -187,25 +187,25 @@ func (ui *mainUI) updateSelectedConnection(cc configConnection) {
 // deletes the selected connection.
 // called from main loop
 func (ui *mainUI) deleteSelectedConnection() {
-	nvalues := []*duit.ListValue{}
+	values := []*duit.ListValue{}
 	for _, lv := range ui.connectionList.Values {
 		if !lv.Selected {
-			nvalues = append(nvalues, lv)
+			values = append(values, lv)
 		}
 	}
-	ui.connectionList.Values = nvalues
+	ui.connectionList.Values = values
 	ui.connectionBox.Kids = duit.NewKids(ui.noConnectionUI)
 	ui.layout()
 }
 
 // saveConnects saves all current configs from connectionList.
 func (ui *mainUI) saveConnections() {
-	l := []configConnection{}
+	l := []connectionConfig{}
 	for _, lv := range ui.connectionList.Values {
 		if lv.Value != nil {
-			l = append(l, lv.Value.(*connUI).cc)
+			l = append(l, lv.Value.(*connUI).config)
 		}
 	}
 
-	go saveConfigConnections(l)
+	go saveConnectionConfigs(l)
 }

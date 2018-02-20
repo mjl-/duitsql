@@ -28,7 +28,7 @@ func (ui *editUI) layout() {
 }
 
 func newEditUI(dbUI *dbUI) (ui *editUI) {
-	sqlPath := fmt.Sprintf("%s/lib/duit/sql/%s.%s.sql", os.Getenv("HOME"), dbUI.connUI.cc.Name, dbUI.dbName)
+	sqlPath := fmt.Sprintf("%s/lib/duit/sql/%s.%s.sql", os.Getenv("HOME"), dbUI.connUI.config.Name, dbUI.dbName)
 
 	edit := &duit.Edit{}
 	// xxx todo: do not read in main loop?

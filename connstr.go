@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-type configConnection struct {
+type connectionConfig struct {
 	Type     string // postgres, mysql, sqlserver
 	Name     string
 	Host     string
@@ -17,8 +17,9 @@ type configConnection struct {
 	TLS      bool
 }
 
-func (cc configConnection) connectionString(dbName string) string {
-	switch cc.Type {
+// connectionString returns an URL or connection string that can be passed to sql.Open.
+func (c connectionConfig) connectionString(dbName string) string {
+	switch c.Type {
 	case "postgres":
 		quote := func(s string) string {
 			s = strings.Replace(s, `\`, `\\`, -1)
@@ -29,18 +30,18 @@ func (cc configConnection) connectionString(dbName string) string {
 			return s
 		}
 		sslmode := "disable"
-		if cc.TLS {
+		if c.TLS {
 			sslmode = "verify-full"
 		}
-		s := fmt.Sprintf("host=%s sslmode=%s application_name=duitsql", quote(cc.Host), sslmode)
-		if cc.Port != 0 {
-			s += fmt.Sprintf(" port=%d", cc.Port)
+		s := fmt.Sprintf("host=%s sslmode=%s application_name=duitsql", quote(c.Host), sslmode)
+		if c.Port != 0 {
+			s += fmt.Sprintf(" port=%d", c.Port)
 		}
-		if cc.User != "" {
-			s += fmt.Sprintf(" user=%s", quote(cc.User))
+		if c.User != "" {
+			s += fmt.Sprintf(" user=%s", quote(c.User))
 		}
-		if cc.Password != "" {
-			s += fmt.Sprintf(" password=%s", quote(cc.Password))
+		if c.Password != "" {
+			s += fmt.Sprintf(" password=%s", quote(c.Password))
 		}
 		if dbName != "" {
 			s += fmt.Sprintf(" dbname=%s", quote(dbName))
@@ -48,41 +49,41 @@ func (cc configConnection) connectionString(dbName string) string {
 		return s
 	case "mysql":
 		s := ""
-		if cc.User != "" || cc.Password != "" {
-			s += cc.User
-			if cc.Password != "" {
-				s += ":" + cc.Password
+		if c.User != "" || c.Password != "" {
+			s += c.User
+			if c.Password != "" {
+				s += ":" + c.Password
 			}
 			s += "@"
 		}
-		address := cc.Host
-		if cc.Port != 0 {
-			address += fmt.Sprintf(":%d", cc.Port)
+		address := c.Host
+		if c.Port != 0 {
+			address += fmt.Sprintf(":%d", c.Port)
 		}
 		s += fmt.Sprintf("tcp(%s)", address)
 		s += "/"
 		if dbName != "" {
 			s += dbName
 		}
-		if cc.TLS {
+		if c.TLS {
 			s += "?tls=true"
 		}
 		return s
 	case "sqlserver":
-		host := cc.Host
-		if cc.Port != 0 {
-			host += fmt.Sprintf(":%d", cc.Port)
+		host := c.Host
+		if c.Port != 0 {
+			host += fmt.Sprintf(":%d", c.Port)
 		}
 		qs := []string{}
 		if dbName != "" {
 			qs = append(qs, "database="+url.QueryEscape(dbName))
 		}
-		if cc.TLS {
+		if c.TLS {
 			qs = append(qs, "encrypt=true", "TrustServerCertificate=false")
 		}
 		u := &url.URL{
 			Scheme:   "sqlserver",
-			User:     url.UserPassword(cc.User, cc.Password),
+			User:     url.UserPassword(c.User, c.Password),
 			Host:     host,
 			RawQuery: strings.Join(qs, "&"),
 		}

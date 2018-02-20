@@ -53,7 +53,7 @@ func (ui *dbUI) init() {
 	})
 	defer handle()
 
-	db, err := sql.Open(ui.connUI.cc.Type, ui.connUI.cc.connectionString(ui.dbName))
+	db, err := sql.Open(ui.connUI.config.Type, ui.connUI.config.connectionString(ui.dbName))
 	lcheck(err, "connecting to database")
 
 	ctx, cancelQueryFunc := context.WithTimeout(context.Background(), 15*time.Second)
@@ -71,7 +71,7 @@ func (ui *dbUI) init() {
 
 	var q string
 	var args []interface{}
-	switch ui.connUI.cc.Type {
+	switch ui.connUI.config.Type {
 	case "postgres":
 		q = `
 			select

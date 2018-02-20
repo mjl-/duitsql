@@ -39,7 +39,7 @@ func connectionsJSONPath() string {
 	return duit.AppDataDir("duitsql") + "/connections.json"
 }
 
-func saveConfigConnections(l []configConnection) {
+func saveConnectionConfigs(l []connectionConfig) {
 	lcheck, handle := errorHandler(func(err error) {
 		dui.Call <- func() {
 			topUI.status.Text = fmt.Sprintf("saving config: %s\n", err)
@@ -80,25 +80,25 @@ func main() {
 		check(err, "open bold font")
 	}
 
-	var configConnections []configConnection
+	var configs []connectionConfig
 	f, err := os.Open(connectionsJSONPath())
 	if err != nil && !os.IsNotExist(err) {
 		check(err, "opening connections.json config file")
 	}
 	if f != nil {
-		err = json.NewDecoder(f).Decode(&configConnections)
+		err = json.NewDecoder(f).Decode(&configs)
 		check(err, "parsing connections.json config file")
 		check(f.Close(), "closing connections.json config file")
 	}
-	for _, cc := range configConnections {
-		switch cc.Type {
+	for _, c := range configs {
+		switch c.Type {
 		case "postgres", "mysql", "sqlserver":
 		default:
-			log.Fatalf("unknown connection type %q\n", cc.Type)
+			log.Fatalf("unknown connection type %q\n", c.Type)
 		}
 	}
 
-	topUI = newMainUI(configConnections)
+	topUI = newMainUI(configs)
 	dui.Top.UI = topUI
 	dui.Render()
 

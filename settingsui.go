@@ -16,26 +16,42 @@ type settingsUI struct {
 	duit.Box
 }
 
-func newSettingsUI(cc configConnection, isNew bool, done func()) (ui *settingsUI) {
+func (ui *settingsUI) connectionConfig() connectionConfig {
+	var port int64
+	if ui.port.Text != "" {
+		port, _ = strconv.ParseInt(ui.port.Text, 10, 16)
+	}
+	return connectionConfig{
+		Type:     ui.typePostgres.Group.Selected().Value.(string),
+		Name:     ui.name.Text,
+		Host:     ui.host.Text,
+		Port:     int(port),
+		User:     ui.user.Text,
+		Password: ui.password.Text,
+		Database: ui.database.Text,
+	}
+}
+
+func newSettingsUI(c connectionConfig, isNew bool, done func()) (ui *settingsUI) {
 	ui = &settingsUI{}
 
-	origName := cc.Name
+	origName := c.Name
 
 	port := ""
-	if cc.Port != 0 {
-		port = fmt.Sprintf("%d", cc.Port)
+	if c.Port != 0 {
+		port = fmt.Sprintf("%d", c.Port)
 	}
 	var primary *duit.Button
 	ui.typePostgres = &duit.Radiobutton{Value: "postgres"}
 	ui.typeMysql = &duit.Radiobutton{Value: "mysql"}
 	ui.typeSqlserver = &duit.Radiobutton{Value: "sqlserver"}
-	ui.name = &duit.Field{Placeholder: "name...", Text: cc.Name}
-	ui.host = &duit.Field{Placeholder: "localhost", Text: cc.Host}
+	ui.name = &duit.Field{Placeholder: "name...", Text: c.Name}
+	ui.host = &duit.Field{Placeholder: "localhost", Text: c.Host}
 	ui.port = &duit.Field{Placeholder: "port...", Text: port}
-	ui.user = &duit.Field{Placeholder: "user name...", Text: cc.User}
-	ui.password = &duit.Field{Placeholder: "password...", Password: true, Text: cc.Password}
-	ui.database = &duit.Field{Placeholder: "database (optional)", Text: cc.Database}
-	ui.tls = &duit.Checkbox{Checked: cc.TLS}
+	ui.user = &duit.Field{Placeholder: "user name...", Text: c.User}
+	ui.password = &duit.Field{Placeholder: "password...", Password: true, Text: c.Password}
+	ui.database = &duit.Field{Placeholder: "database (optional)", Text: c.Database}
+	ui.tls = &duit.Checkbox{Checked: c.TLS}
 
 	dbTypes := []*duit.Radiobutton{
 		ui.typePostgres,
@@ -45,21 +61,13 @@ func newSettingsUI(cc configConnection, isNew bool, done func()) (ui *settingsUI
 	ui.typePostgres.Group = dbTypes
 	ui.typeMysql.Group = dbTypes
 	ui.typeSqlserver.Group = dbTypes
-	switch cc.Type {
+	switch c.Type {
 	case "postgres":
 		ui.typePostgres.Selected = true
 	case "mysql":
 		ui.typeMysql.Selected = true
 	case "sqlserver":
 		ui.typeSqlserver.Selected = true
-	}
-	radiobuttonValue := func(group []*duit.Radiobutton) interface{} {
-		for _, e := range group {
-			if e.Selected {
-				return e.Value
-			}
-		}
-		return nil
 	}
 
 	validPort := func(s string) bool {
@@ -88,32 +96,11 @@ func newSettingsUI(cc configConnection, isNew bool, done func()) (ui *settingsUI
 		Text:     action,
 		Colorset: &dui.Primary,
 		Click: func() (e duit.Event) {
-			port := int64(0)
-			if ui.port.Text != "" {
-				port, _ = strconv.ParseInt(ui.port.Text, 10, 16)
-			}
-			cc := configConnection{
-				Type:     radiobuttonValue(dbTypes).(string),
-				Name:     ui.name.Text,
-				Host:     ui.host.Text,
-				Port:     int(port),
-				User:     ui.user.Text,
-				Password: ui.password.Text,
-				Database: ui.database.Text,
-			}
-			l := make([]configConnection, len(topUI.connectionList.Values)-1)
-			for i, lv := range topUI.connectionList.Values[:len(topUI.connectionList.Values)-1] {
-				if lv.Selected {
-					l[i] = cc
-				} else {
-					l[i] = lv.Value.(*connUI).cc
-				}
-			}
-
+			c := ui.connectionConfig()
 			if origName == "" {
-				topUI.addNewConnection(cc)
+				topUI.addNewConnection(c)
 			} else {
-				topUI.updateSelectedConnection(cc)
+				topUI.updateSelectedConnection(c)
 			}
 			done()
 
@@ -148,9 +135,9 @@ func newSettingsUI(cc configConnection, isNew bool, done func()) (ui *settingsUI
 			duplicate := &duit.Button{
 				Text: "duplicate",
 				Click: func() (e duit.Event) {
-					ncc := cc
-					ncc.Name = ""
-					topUI.duplicateSettings(ncc)
+					c := ui.connectionConfig()
+					c.Name = ""
+					topUI.duplicateSettings(c)
 					return
 				},
 			}
