@@ -1,10 +1,22 @@
 /*
+UI structure:
+One mainUI as variable topUI. It has a list of connections and possibly an active connUI. Instead of the active connUI, we can always have a settingsUI in its place.
+A connUI has a list of databases and possibly an active dbUI.
+A dbUI has a list of tables/views and possibly an active tableUI, viewUI or editUI.
+A tableUI and viewUI are very similar: they have a Tabs to switch between rows (resultUI) and structure view (tablestructUI/viewstructUI).
+An editUI has a duit.Edit for the SQL, and a resultUI.
+*/
+
+/*
 SQL database browser and query executor, created with duit.
 
-Duitsql can connect to PostgreSQL, MySQL and MS SQLServer. All through their pure Go database drivers, and because they have an information_schema describing their table structure.
-Select and manage connections to database server on the left (type/user/password/host/port).
-Next select one of the database, then one of the tables or manual SQL input.
-Finally view the tables/views, the query results, or the structure of the objects.
+Duitsql can connect to PostgreSQL, MySQL and SQLServer servers through their pure Go database drivers. Only these provide basic SQL introspection through an information_schema.
+
+Using
+
+Select and manage connections to database servers on the left (type/user/password/host/port).
+Select a database, then a table/view or write your own SQL query.
+You will see the rows in the selected table/view or the query results. You can also choose to view the structure of the database objects (columns and types, etc).
 
 Connections are stored in $appdata/duitsql/connections.json, including passwords.
 SQL scripts are stored in $appdata/duitsql/$connectionname.$databasename.sql.
