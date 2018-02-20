@@ -19,7 +19,7 @@ func newMainUI(configConnections []configConnection) (ui *mainUI) {
 	ui = &mainUI{}
 
 	ui.connectionBox = &duit.Box{}
-	ui.noConnectionUI = duit.NewMiddle(duit.SpaceXY(10, 10), label("select a connection on the left"))
+	ui.noConnectionUI = middle(label("select a connection on the left"))
 	ui.connectionBox.Kids = duit.NewKids(ui.noConnectionUI)
 
 	connectionValues := make([]*duit.ListValue, len(configConnections)+1)

@@ -156,7 +156,7 @@ func (ui *dbUI) init() {
 				lv := ui.tableList.Rows[index]
 				var selUI duit.UI
 				if !lv.Selected {
-					selUI = duit.NewMiddle(duit.SpaceXY(10, 10), label("select <sql>, or a a table or view on the left"))
+					selUI = middle(label("select <sql>, or a a table or view on the left"))
 				} else {
 					selUI = lv.Value.(duit.UI)
 					switch objUI := selUI.(type) {

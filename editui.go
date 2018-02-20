@@ -102,12 +102,7 @@ func newEditUI(dbUI *dbUI) (ui *editUI) {
 		return
 	}
 	resultBox := &duit.Box{
-		Kids: duit.NewKids(
-			duit.NewMiddle(
-				duit.SpaceXY(10, 10),
-				label("type a query and execute selection or query under cursor with cmd + g"),
-			),
-		),
+		Kids: duit.NewKids(middle(label("type a query and execute selection or query under cursor with cmd + g"))),
 	}
 	ui = &editUI{
 		dbUI:      dbUI,
