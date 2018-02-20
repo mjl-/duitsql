@@ -18,8 +18,11 @@ type tablestructUI struct {
 }
 
 func newTableStructUI(dbUI *dbUI, name string) *tablestructUI {
-	scrollBox := &duit.Box{}
+	scrollBox := &duit.Box{
+		Height: -1,
+	}
 	scroll := &duit.Scroll{
+		Height: -1,
 		Kid: duit.Kid{
 			UI: scrollBox,
 		},

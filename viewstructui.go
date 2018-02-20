@@ -19,8 +19,11 @@ type viewstructUI struct {
 }
 
 func newViewStructUI(dbUI *dbUI, name string) *viewstructUI {
-	scrollBox := &duit.Box{}
+	scrollBox := &duit.Box{
+		Height: -1,
+	}
 	scroll := &duit.Scroll{
+		Height: -1,
 		Kid: duit.Kid{
 			UI: scrollBox,
 		},
