@@ -9,6 +9,10 @@ import (
 )
 
 type settingsUI struct {
+	typePostgres, typeMysql, typeSqlserver     *duit.Radiobutton
+	name, host, port, user, password, database *duit.Field
+	tls                                        *duit.Checkbox
+
 	duit.Box
 }
 
@@ -22,37 +26,32 @@ func newSettingsUI(cc configConnection, isNew bool, done func()) (ui *settingsUI
 		port = fmt.Sprintf("%d", cc.Port)
 	}
 	var primary *duit.Button
-	var conn = struct {
-		typePostgres, typeMysql, typeSqlserver     *duit.Radiobutton
-		name, host, port, user, password, database *duit.Field
-		tls                                        *duit.Checkbox
-	}{
-		&duit.Radiobutton{Value: "postgres"},
-		&duit.Radiobutton{Value: "mysql"},
-		&duit.Radiobutton{Value: "sqlserver"},
-		&duit.Field{Placeholder: "name...", Text: cc.Name},
-		&duit.Field{Placeholder: "localhost", Text: cc.Host},
-		&duit.Field{Placeholder: "port...", Text: port},
-		&duit.Field{Placeholder: "user name...", Text: cc.User},
-		&duit.Field{Placeholder: "password...", Password: true, Text: cc.Password},
-		&duit.Field{Placeholder: "database (optional)", Text: cc.Database},
-		&duit.Checkbox{Checked: cc.TLS},
+	ui.typePostgres = &duit.Radiobutton{Value: "postgres"}
+	ui.typeMysql = &duit.Radiobutton{Value: "mysql"}
+	ui.typeSqlserver = &duit.Radiobutton{Value: "sqlserver"}
+	ui.name = &duit.Field{Placeholder: "name...", Text: cc.Name}
+	ui.host = &duit.Field{Placeholder: "localhost", Text: cc.Host}
+	ui.port = &duit.Field{Placeholder: "port...", Text: port}
+	ui.user = &duit.Field{Placeholder: "user name...", Text: cc.User}
+	ui.password = &duit.Field{Placeholder: "password...", Password: true, Text: cc.Password}
+	ui.database = &duit.Field{Placeholder: "database (optional)", Text: cc.Database}
+	ui.tls = &duit.Checkbox{Checked: cc.TLS}
+
+	dbTypes := []*duit.Radiobutton{
+		ui.typePostgres,
+		ui.typeMysql,
+		ui.typeSqlserver,
 	}
-	dbtypes := []*duit.Radiobutton{
-		conn.typePostgres,
-		conn.typeMysql,
-		conn.typeSqlserver,
-	}
-	conn.typePostgres.Group = dbtypes
-	conn.typeMysql.Group = dbtypes
-	conn.typeSqlserver.Group = dbtypes
+	ui.typePostgres.Group = dbTypes
+	ui.typeMysql.Group = dbTypes
+	ui.typeSqlserver.Group = dbTypes
 	switch cc.Type {
 	case "postgres":
-		conn.typePostgres.Selected = true
+		ui.typePostgres.Selected = true
 	case "mysql":
-		conn.typeMysql.Selected = true
+		ui.typeMysql.Selected = true
 	case "sqlserver":
-		conn.typeSqlserver.Selected = true
+		ui.typeSqlserver.Selected = true
 	}
 	radiobuttonValue := func(group []*duit.Radiobutton) interface{} {
 		for _, e := range group {
@@ -69,15 +68,15 @@ func newSettingsUI(cc configConnection, isNew bool, done func()) (ui *settingsUI
 	}
 	check := func(_ string) (e duit.Event) {
 		o := primary.Disabled
-		primary.Disabled = conn.name.Text == "" || conn.host.Text == "" || (conn.port.Text != "" && !validPort(conn.port.Text))
+		primary.Disabled = ui.name.Text == "" || ui.host.Text == "" || (ui.port.Text != "" && !validPort(ui.port.Text))
 		if o != primary.Disabled {
 			dui.MarkDraw(primary)
 		}
 		return
 	}
-	conn.name.Changed = check
-	conn.host.Changed = check
-	conn.port.Changed = check
+	ui.name.Changed = check
+	ui.host.Changed = check
+	ui.port.Changed = check
 
 	title := "edit connection"
 	action := "save"
@@ -90,17 +89,17 @@ func newSettingsUI(cc configConnection, isNew bool, done func()) (ui *settingsUI
 		Colorset: &dui.Primary,
 		Click: func() (e duit.Event) {
 			port := int64(0)
-			if conn.port.Text != "" {
-				port, _ = strconv.ParseInt(conn.port.Text, 10, 16)
+			if ui.port.Text != "" {
+				port, _ = strconv.ParseInt(ui.port.Text, 10, 16)
 			}
 			cc := configConnection{
-				Type:     radiobuttonValue(dbtypes).(string),
-				Name:     conn.name.Text,
-				Host:     conn.host.Text,
+				Type:     radiobuttonValue(dbTypes).(string),
+				Name:     ui.name.Text,
+				Host:     ui.host.Text,
 				Port:     int(port),
-				User:     conn.user.Text,
-				Password: conn.password.Text,
-				Database: conn.database.Text,
+				User:     ui.user.Text,
+				Password: ui.password.Text,
+				Database: ui.database.Text,
 			}
 			l := make([]configConnection, len(topUI.connectionList.Values)-1)
 			for i, lv := range topUI.connectionList.Values[:len(topUI.connectionList.Values)-1] {
@@ -111,18 +110,14 @@ func newSettingsUI(cc configConnection, isNew bool, done func()) (ui *settingsUI
 				}
 			}
 
-			go func() {
-				saveConfigConnections(l)
+			if origName == "" {
+				topUI.addNewConnection(cc)
+			} else {
+				topUI.updateSelectedConnection(cc)
+			}
+			done()
 
-				dui.Call <- func() {
-					if origName == "" {
-						topUI.newConnection(cc)
-					} else {
-						topUI.updateConnection(cc)
-					}
-					done()
-				}
-			}()
+			topUI.saveConnections()
 			return
 		},
 	}
@@ -144,6 +139,7 @@ func newSettingsUI(cc configConnection, isNew bool, done func()) (ui *settingsUI
 			Colorset: &dui.Danger,
 			Click: func() (e duit.Event) {
 				topUI.deleteSelectedConnection()
+				topUI.saveConnections()
 				return
 			},
 		}
@@ -189,45 +185,45 @@ func newSettingsUI(cc configConnection, isNew bool, done func()) (ui *settingsUI
 							&duit.Box{
 								Margin: image.Pt(2, 0),
 								Kids: duit.NewKids(
-									conn.typePostgres,
+									ui.typePostgres,
 									&duit.Label{
 										Text: "postgres",
 										Click: func() (e duit.Event) {
-											conn.typePostgres.Select(dui)
+											ui.typePostgres.Select(dui)
 											return
 										},
 									},
-									conn.typeMysql,
+									ui.typeMysql,
 									&duit.Label{
 										Text: "mysql",
 										Click: func() (e duit.Event) {
-											conn.typeMysql.Select(dui)
+											ui.typeMysql.Select(dui)
 											return
 										},
 									},
-									conn.typeSqlserver,
+									ui.typeSqlserver,
 									&duit.Label{
 										Text: "sqlserver",
 										Click: func() (e duit.Event) {
-											conn.typeSqlserver.Select(dui)
+											ui.typeSqlserver.Select(dui)
 											return
 										},
 									},
 								),
 							},
 							label("name"),
-							conn.name,
+							ui.name,
 							label("host"),
-							conn.host,
+							ui.host,
 							label("port"),
-							conn.port,
+							ui.port,
 							label("user"),
-							conn.user,
+							ui.user,
 							label("password"),
-							conn.password,
+							ui.password,
 							label("database"),
-							conn.database,
-							conn.tls,
+							ui.database,
+							ui.tls,
 							label("require TLS"),
 							label(""),
 							actionBox,

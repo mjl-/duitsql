@@ -11,6 +11,7 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"path"
@@ -40,7 +41,10 @@ func connectionsJSONPath() string {
 
 func saveConfigConnections(l []configConnection) {
 	lcheck, handle := errorHandler(func(err error) {
-		log.Printf("saving config: %s\n", err)
+		dui.Call <- func() {
+			topUI.status.Text = fmt.Sprintf("saving config: %s\n", err)
+			dui.MarkLayout(topUI.status)
+		}
 	})
 	defer handle()
 	p := connectionsJSONPath()
