@@ -92,6 +92,10 @@ func (ui *resultUI) load() {
 	colTypes, err := rows.ColumnTypes()
 	lcheck(err, "reading column types")
 
+	if len(colTypes) == 0 {
+		lcheck(fmt.Errorf("no columns in result"), "reading result column types")
+	}
+
 	halign := make([]duit.Halign, len(colTypes))
 
 	vals := make([]interface{}, len(colTypes))
