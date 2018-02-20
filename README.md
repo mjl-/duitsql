@@ -5,6 +5,10 @@ duitsql - simple sql database browser and query executor
 Duitsql lets you connect to SQL database (only postgres currently), and list databases, tables & views, and data in them. It also lets you execute queries and view the results.
 Duitsql was created to showcase duit, the developer ui toolkit, and vice versa.
 
+# install
+
+	make dep build
+
 # license
 
 MIT-license, see LICENSE.md

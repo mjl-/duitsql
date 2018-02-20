@@ -3,6 +3,9 @@ build:
 	go vet
 	golint
 
+dep:
+	dep ensure
+
 install:
 	go install
 
