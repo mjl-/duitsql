@@ -53,7 +53,6 @@ func newMainUI(configs []connectionConfig) (ui *mainUI) {
 				sUI := newSettingsUI(connectionConfig{Type: "postgres"}, true, nop)
 				ui.connectionBox.Kids = duit.NewKids(sUI)
 				dui.MarkLayout(ui)
-				dui.Render()
 				dui.Focus(sUI.name)
 				return
 			}
@@ -62,7 +61,6 @@ func newMainUI(configs []connectionConfig) (ui *mainUI) {
 			ui.connectionBox.Kids = duit.NewKids(cUI)
 			dui.MarkLayout(ui)
 			if cUI.db == nil {
-				dui.Render()
 				dui.Focus(cUI.connect)
 			}
 			return
@@ -148,7 +146,6 @@ func (ui *mainUI) duplicateSettings(c connectionConfig) {
 		}
 	}
 	ui.layout()
-	dui.Render()
 	dui.Focus(sUI.name)
 }
 

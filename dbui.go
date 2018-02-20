@@ -172,7 +172,6 @@ func (ui *dbUI) init() {
 				ui.contentUI.Kids = duit.NewKids(selUI)
 				ui.layout()
 				if focusUI != nil {
-					dui.Render()
 					dui.Focus(focusUI)
 				}
 				return

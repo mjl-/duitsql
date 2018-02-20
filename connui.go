@@ -148,12 +148,10 @@ func newConnUI(config connectionConfig) (ui *connUI) {
 			sUI := newSettingsUI(ui.config, false, func() {
 				ui.Box.Kids = duit.NewKids(ui.unconnected)
 				ui.layout()
-				dui.Render()
 				dui.Focus(ui.connect)
 			})
 			ui.Box.Kids = duit.NewKids(sUI)
 			ui.layout()
-			dui.Render()
 			dui.Focus(sUI.name)
 			return
 		},
@@ -176,7 +174,6 @@ func newConnUI(config connectionConfig) (ui *connUI) {
 			if shouldConnect {
 				go lv.Value.(*dbUI).init()
 			} else {
-				dui.Render()
 				dui.Focus(lv.Value.(*dbUI).tableList)
 			}
 			return
