@@ -20,6 +20,7 @@ type connUI struct {
 	unconnected duit.UI
 	connect     *duit.Button
 	status      *duit.Label
+	split       *duit.Split
 
 	duit.Box
 }
@@ -39,7 +40,7 @@ func newConnUI(config connectionConfig) (ui *connUI) {
 
 	noDBUI := middle(label("select a database on the left"))
 
-	var connecting, databases duit.UI
+	var connecting duit.UI
 
 	cancel := &duit.Button{
 		Text: "cancel",
@@ -134,7 +135,7 @@ func newConnUI(config connectionConfig) (ui *connUI) {
 					if sel != nil {
 						nui = sel.Value.(*dbUI)
 					}
-					ui.Box.Kids = duit.NewKids(databases)
+					ui.Box.Kids = duit.NewKids(ui.split)
 					ui.Box.Kids[0].ID = "databases"
 					ui.databaseBox.Kids = duit.NewKids(nui)
 				}
@@ -182,18 +183,11 @@ func newConnUI(config connectionConfig) (ui *connUI) {
 	ui.databaseBox = &duit.Box{
 		Kids: duit.NewKids(noDBUI),
 	}
-	databases = &duit.Split{
+	ui.split = &duit.Split{
 		Gutter:     1,
 		Background: dui.Gutter,
 		Split: func(width int) []int {
-			if topUI.hideLeftBars {
-				return []int{0, width}
-			}
-			first := dui.Scale(200)
-			if first > width/2 {
-				first = width / 2
-			}
-			return []int{first, width - first}
+			return ui.splitDimensions(width)
 		},
 		Kids: duit.NewKids(
 			&duit.Box{
@@ -207,6 +201,26 @@ func newConnUI(config connectionConfig) (ui *connUI) {
 	}
 	ui.Box.Kids = duit.NewKids(ui.unconnected)
 	return
+}
+
+func (ui *connUI) splitDimensions(width int) []int {
+	if topUI.hideLeftBars {
+		return []int{0, width}
+	}
+	first := dui.Scale(200)
+	if first > width/2 {
+		first = width / 2
+	}
+	return []int{first, width - first}
+}
+
+func (ui *connUI) ensureLeftBars() {
+	k := ui.Box.Kids[0]
+	if k.UI != ui.split {
+		return
+	}
+	width := k.R.Dx()
+	ui.split.Dimensions(dui, ui.splitDimensions(width))
 }
 
 func (ui *connUI) disconnect() {

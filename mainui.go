@@ -14,6 +14,8 @@ type mainUI struct {
 	status         *duit.Label
 	connectionList *duit.List
 	connectionBox  *duit.Box
+	splitKid       *duit.Kid
+	split          *duit.Split
 	duit.Box
 }
 
@@ -72,6 +74,7 @@ func newMainUI(configs []connectionConfig) (ui *mainUI) {
 		Text: "toggle left",
 		Click: func() (e duit.Event) {
 			ui.hideLeftBars = !ui.hideLeftBars
+			ui.ensureLeftBars()
 			dui.MarkLayout(nil)
 			return
 		},
@@ -94,38 +97,52 @@ func newMainUI(configs []connectionConfig) (ui *mainUI) {
 	}
 	ui.status = &duit.Label{}
 
+	ui.split = &duit.Split{
+		Gutter:     1,
+		Background: dui.Gutter,
+		Split: func(width int) []int {
+			return ui.splitDimensions(width)
+		},
+		Kids: duit.NewKids(
+			&duit.Box{
+				Kids: duit.NewKids(
+					duit.CenterUI(duit.SpaceXY(4, 2), &duit.Label{Text: "connections", Font: bold}),
+					duit.NewScroll(ui.connectionList),
+				),
+			},
+			ui.connectionBox,
+		),
+	}
 	ui.Box.Kids = duit.NewKids(
 		&duit.Box{
 			Padding: duit.SpaceXY(4, 2),
 			Margin:  image.Pt(4, 2),
 			Kids:    duit.NewKids(toggleSlim, ui.disconnect, ui.status),
 		},
-		&duit.Split{
-			Gutter:     1,
-			Background: dui.Gutter,
-			Split: func(width int) []int {
-				if ui.hideLeftBars {
-					return []int{0, width}
-				}
-				first := dui.Scale(125)
-				if first > width/2 {
-					first = width / 2
-				}
-				return []int{first, width - first}
-			},
-			Kids: duit.NewKids(
-				&duit.Box{
-					Kids: duit.NewKids(
-						duit.CenterUI(duit.SpaceXY(4, 2), &duit.Label{Text: "connections", Font: bold}),
-						duit.NewScroll(ui.connectionList),
-					),
-				},
-				ui.connectionBox,
-			),
-		},
+		ui.split,
 	)
-	ui.Box.Kids[1].ID = "connections"
+	ui.splitKid = ui.Box.Kids[1]
+	ui.splitKid.ID = "connections"
 	return
+}
+
+func (ui *mainUI) splitDimensions(width int) []int {
+	if ui.hideLeftBars {
+		return []int{0, width}
+	}
+	first := dui.Scale(125)
+	if first > width/2 {
+		first = width / 2
+	}
+	return []int{first, width - first}
+}
+
+func (ui *mainUI) ensureLeftBars() {
+	width := ui.splitKid.R.Dx()
+	ui.split.Dimensions(dui, ui.splitDimensions(width))
+	if cUI, ok := ui.connectionBox.Kids[0].UI.(*connUI); ok {
+		cUI.ensureLeftBars()
+	}
 }
 
 func (ui *mainUI) layout() {
