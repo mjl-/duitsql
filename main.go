@@ -5,6 +5,9 @@ Duitsql can connect to PostgreSQL, MySQL and MS SQLServer. All through their pur
 Select and manage connections to database server on the left (type/user/password/host/port).
 Next select one of the database, then one of the tables or manual SQL input.
 Finally view the tables/views, the query results, or the structure of the objects.
+
+Connections are stored in $appdata/duitsql/connections.json, including passwords.
+SQL scripts are stored in $appdata/duitsql/$connectionname.$databasename.sql.
 */
 package main
 
