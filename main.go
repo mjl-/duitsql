@@ -1,4 +1,11 @@
-// SQL database browser and query executor, created with duit.
+/*
+SQL database browser and query executor, created with duit.
+
+Duitsql can connect to PostgreSQL, MySQL and MS SQLServer. All through their pure Go database drivers, and because they have an information_schema describing their table structure.
+Select and manage connections to database server on the left (type/user/password/host/port).
+Next select one of the database, then one of the tables or manual SQL input.
+Finally view the tables/views, the query results, or the structure of the objects.
+*/
 package main
 
 import (
@@ -27,22 +34,23 @@ func check(err error, msg string) {
 	}
 }
 
+func connectionsJSONPath() string {
+	return duit.AppDataDir("duitsql") + "/connections.json"
+}
+
 func saveConfigConnections(l []configConnection) {
-	p := os.Getenv("HOME") + "/lib/duitsql/connections.json"
+	lcheck, handle := errorHandler(func(err error) {
+		log.Printf("saving config: %s\n", err)
+	})
+	defer handle()
+	p := connectionsJSONPath()
 	os.MkdirAll(path.Dir(p), 0777)
 	f, err := os.Create(p)
-	if err == nil {
-		err = json.NewEncoder(f).Encode(l)
-	}
-	if f != nil {
-		err2 := f.Close()
-		if err == nil {
-			err = err2
-		}
-	}
-	if err != nil {
-		log.Printf("saving config: %s\n", err)
-	}
+	lcheck(err, "create")
+	err = json.NewEncoder(f).Encode(l)
+	lcheck(err, "encoding json")
+	err = f.Close()
+	lcheck(err, "close")
 }
 
 func main() {
@@ -69,7 +77,7 @@ func main() {
 	}
 
 	var configConnections []configConnection
-	f, err := os.Open(os.Getenv("HOME") + "/lib/duitsql/connections.json")
+	f, err := os.Open(connectionsJSONPath())
 	if err != nil && !os.IsNotExist(err) {
 		check(err, "opening connections.json config file")
 	}
