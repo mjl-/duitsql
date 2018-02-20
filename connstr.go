@@ -20,13 +20,30 @@ type configConnection struct {
 func (cc configConnection) connectionString(dbName string) string {
 	switch cc.Type {
 	case "postgres":
-		tls := "disable"
-		if cc.TLS {
-			tls = "verify-full"
+		quote := func(s string) string {
+			s = strings.Replace(s, `\`, `\\`, -1)
+			s = strings.Replace(s, `'`, `\'`, -1)
+			if s == "" || strings.ContainsAny(s, " '\\") {
+				s = "'" + s + "'"
+			}
+			return s
 		}
-		s := fmt.Sprintf("user=%s password=%s host=%s port=%d sslmode=%s application_name=duitsql", cc.User, cc.Password, cc.Host, cc.Port, tls)
+		sslmode := "disable"
+		if cc.TLS {
+			sslmode = "verify-full"
+		}
+		s := fmt.Sprintf("host=%s sslmode=%s application_name=duitsql", quote(cc.Host), sslmode)
+		if cc.Port != 0 {
+			s += fmt.Sprintf(" port=%d", cc.Port)
+		}
+		if cc.User != "" {
+			s += fmt.Sprintf(" user=%s", quote(cc.User))
+		}
+		if cc.Password != "" {
+			s += fmt.Sprintf(" password=%s", quote(cc.Password))
+		}
 		if dbName != "" {
-			s += fmt.Sprintf(" dbname=%s", dbName)
+			s += fmt.Sprintf(" dbname=%s", quote(dbName))
 		}
 		return s
 	case "mysql":
