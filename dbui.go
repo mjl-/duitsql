@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/mjl-/duit"
+	"github.com/mjl-/filterlist"
 )
 
 type dbUI struct {
@@ -14,10 +15,10 @@ type dbUI struct {
 	dbName string
 	db     *sql.DB
 
-	tableList *duit.Gridlist
+	tables    *filterlist.Filtergridlist
 	contentUI *duit.Box // holds 1 kid, the editUI, tableUI, viewUI or placeholder label
 
-	duit.Box // holds either box with status message, or box with tableList and contentUI
+	duit.Box // holds either box with status message, or box with tables and contentUI
 }
 
 func newDBUI(cUI *connUI, dbName string) (ui *dbUI) {
@@ -147,12 +148,12 @@ func (ui *dbUI) init() {
 	dui.Call <- func() {
 		defer ui.layout()
 		ui.db = db
-		ui.tableList = &duit.Gridlist{
+		gridlist := &duit.Gridlist{
 			Fit:    duit.FitSlim,
 			Halign: []duit.Halign{duit.HalignMiddle, duit.HalignLeft},
 			Rows:   values,
 			Changed: func(index int) (e duit.Event) {
-				lv := ui.tableList.Rows[index]
+				lv := ui.tables.Gridlist.Rows[index]
 				var selUI, focusUI duit.UI
 				if !lv.Selected {
 					selUI = middle(label("select <sql>, or a a table or view on the left"))
@@ -177,6 +178,7 @@ func (ui *dbUI) init() {
 				return
 			},
 		}
+		ui.tables = filterlist.NewFiltergridlist(dui, gridlist)
 		ui.contentUI = &duit.Box{
 			Kids: duit.NewKids(eUI),
 		}
@@ -195,7 +197,7 @@ func (ui *dbUI) init() {
 					&duit.Box{
 						Kids: duit.NewKids(
 							duit.CenterUI(duit.SpaceXY(4, 2), &duit.Label{Text: "tables", Font: bold}),
-							duit.NewScroll(ui.tableList),
+							ui.tables,
 						),
 					},
 					ui.contentUI,

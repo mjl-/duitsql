@@ -17,7 +17,6 @@ MIT-license, see LICENSE.md
 
 - add buttons to refresh list of database, list of tables/views, data for table/view
 - fix todo's
-- search for connections, databases, tables, at bottom of list
 
 - find cause of not being able to cancel queries that cause a new db connection to be created
 - colors in UI to indicate which connection you have open

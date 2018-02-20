@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/mjl-/duit"
+	"github.com/mjl-/filterlist"
 )
 
 type connUI struct {
@@ -21,6 +22,7 @@ type connUI struct {
 	connect     *duit.Button
 	status      *duit.Label
 	split       *duit.Split
+	databases   *filterlist.Filterlist
 
 	duit.Box
 }
@@ -36,8 +38,6 @@ func (ui *connUI) error(msg string) {
 }
 
 func newConnUI(config connectionConfig) (ui *connUI) {
-	var databaseList *duit.List
-
 	noDBUI := middle(label("select a database on the left"))
 
 	var connecting duit.UI
@@ -130,7 +130,8 @@ func newConnUI(config connectionConfig) (ui *connUI) {
 					defer ui.layout()
 					ui.db = db
 					topUI.disconnect.Disabled = false
-					databaseList.Values = dbValues
+					ui.databases.Values = dbValues
+					ui.databases.Filter()
 					nui := noDBUI
 					if sel != nil {
 						nui = sel.Value.(*dbUI)
@@ -160,25 +161,24 @@ func newConnUI(config connectionConfig) (ui *connUI) {
 	ui.status = &duit.Label{}
 	ui.unconnected = middle(ui.status, ui.connect, edit)
 	connecting = middle(label("connecting..."), cancel)
-	databaseList = &duit.List{
-		Changed: func(index int) (e duit.Event) {
-			lv := databaseList.Values[index]
-			nui := noDBUI
-			shouldConnect := false
-			if lv.Selected {
-				dbUI := lv.Value.(*dbUI)
-				nui = dbUI
-				shouldConnect = dbUI.db == nil
-			}
-			ui.databaseBox.Kids = duit.NewKids(nui)
-			dui.MarkLayout(ui)
-			if shouldConnect {
-				go lv.Value.(*dbUI).init()
-			} else {
-				dui.Focus(lv.Value.(*dbUI).tableList)
-			}
-			return
-		},
+	ui.databases = filterlist.NewFilterlist(dui, &duit.List{Values: nil})
+	ui.databases.List.Changed = func(index int) (e duit.Event) {
+		lv := ui.databases.List.Values[index]
+		nui := noDBUI
+		shouldConnect := false
+		if lv.Selected {
+			dbUI := lv.Value.(*dbUI)
+			nui = dbUI
+			shouldConnect = dbUI.db == nil
+		}
+		ui.databaseBox.Kids = duit.NewKids(nui)
+		dui.MarkLayout(ui)
+		if shouldConnect {
+			go lv.Value.(*dbUI).init()
+		} else {
+			dui.Focus(lv.Value.(*dbUI).tables.Search)
+		}
+		return
 	}
 	ui.databaseBox = &duit.Box{
 		Kids: duit.NewKids(noDBUI),
@@ -193,7 +193,7 @@ func newConnUI(config connectionConfig) (ui *connUI) {
 			&duit.Box{
 				Kids: duit.NewKids(
 					duit.CenterUI(duit.SpaceXY(4, 2), &duit.Label{Text: "databases", Font: bold}),
-					duit.NewScroll(databaseList),
+					ui.databases,
 				),
 			},
 			ui.databaseBox,
