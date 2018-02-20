@@ -152,22 +152,29 @@ func (ui *dbUI) init() {
 			Halign: []duit.Halign{duit.HalignMiddle, duit.HalignLeft},
 			Rows:   values,
 			Changed: func(index int) (e duit.Event) {
-				defer ui.layout()
 				lv := ui.tableList.Rows[index]
-				var selUI duit.UI
+				var selUI, focusUI duit.UI
 				if !lv.Selected {
 					selUI = middle(label("select <sql>, or a a table or view on the left"))
 				} else {
 					selUI = lv.Value.(duit.UI)
 					switch objUI := selUI.(type) {
 					case *editUI:
+						focusUI = objUI.edit
 					case *tableUI:
 						objUI.init()
+						focusUI = objUI.tabsUI.Buttongroup
 					case *viewUI:
 						objUI.init()
+						focusUI = objUI.tabsUI.Buttongroup
 					}
 				}
 				ui.contentUI.Kids = duit.NewKids(selUI)
+				ui.layout()
+				if focusUI != nil {
+					dui.Render()
+					dui.Focus(focusUI)
+				}
 				return
 			},
 		}

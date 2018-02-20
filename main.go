@@ -116,6 +116,7 @@ func main() {
 	topUI = newMainUI(configs)
 	dui.Top.UI = topUI
 	dui.Render()
+	dui.Focus(topUI.connectionList)
 
 	for {
 		select {

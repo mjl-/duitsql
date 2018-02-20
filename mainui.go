@@ -50,8 +50,11 @@ func newMainUI(configs []connectionConfig) (ui *mainUI) {
 			}
 			if lv.Value == nil {
 				nop := func() {}
-				ui.connectionBox.Kids = duit.NewKids(newSettingsUI(connectionConfig{Type: "postgres"}, true, nop))
+				sUI := newSettingsUI(connectionConfig{Type: "postgres"}, true, nop)
+				ui.connectionBox.Kids = duit.NewKids(sUI)
 				dui.MarkLayout(ui)
+				dui.Render()
+				dui.Focus(sUI.name)
 				return
 			}
 			cUI := lv.Value.(*connUI)
@@ -87,6 +90,7 @@ func newMainUI(configs []connectionConfig) (ui *mainUI) {
 			lv := ui.connectionList.Values[l[0]]
 			cUI := lv.Value.(*connUI)
 			cUI.disconnect()
+			dui.Focus(ui.connectionList)
 			return
 		},
 	}
@@ -132,16 +136,20 @@ func (ui *mainUI) layout() {
 
 // essentially opens the "new settings" ui, but with the given config filled in.
 func (ui *mainUI) duplicateSettings(c connectionConfig) {
+	var sUI *settingsUI
 	for _, lv := range ui.connectionList.Values {
 		if lv.Value == nil {
 			lv.Selected = true
 			nop := func() {}
-			ui.connectionBox.Kids = duit.NewKids(newSettingsUI(c, true, nop))
+			sUI = newSettingsUI(c, true, nop)
+			ui.connectionBox.Kids = duit.NewKids(sUI)
 		} else {
 			lv.Selected = false
 		}
 	}
 	ui.layout()
+	dui.Render()
+	dui.Focus(sUI.name)
 }
 
 // sortConnections sorts the connectionList values by label (which should be  the config name).

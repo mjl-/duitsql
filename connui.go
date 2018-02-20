@@ -145,11 +145,16 @@ func newConnUI(config connectionConfig) (ui *connUI) {
 	edit := &duit.Button{
 		Text: "edit",
 		Click: func() (e duit.Event) {
-			defer ui.layout()
-			ui.Box.Kids = duit.NewKids(newSettingsUI(ui.config, false, func() {
+			sUI := newSettingsUI(ui.config, false, func() {
 				ui.Box.Kids = duit.NewKids(ui.unconnected)
 				ui.layout()
-			}))
+				dui.Render()
+				dui.Focus(ui.connect)
+			})
+			ui.Box.Kids = duit.NewKids(sUI)
+			ui.layout()
+			dui.Render()
+			dui.Focus(sUI.name)
 			return
 		},
 	}
